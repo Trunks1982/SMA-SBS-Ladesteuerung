@@ -1,4 +1,4 @@
-# 🔋 Home Assistant – Akkusteuerung für SMA-Wechselrichter via Modbus
+# 🔋 Home Assistant – Akkusteuerung für SMA-Batterie-Wechselrichter via Modbus
 
 Diese Home Assistant-Automatisierung ermöglicht die flexible Steuerung eines SMA-Wechselrichters über das Modbus-Protokoll. Sie erlaubt die dynamische Anpassung von Lade- und Entladeleistungen des Batteriespeichersystems basierend auf vordefinierten Betriebsmodi und Benutzerpräferenzen.
 
