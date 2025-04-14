@@ -45,8 +45,12 @@ Stelle sicher, dass dein SMA-Wechselrichter über Modbus erreichbar ist und korr
 
 ```yaml
 modbus:
-  - name: sma-sr_wr
-    type: tcp
-    host: <IP_DEINES_WECHSELRICHTERS>
-    port: 502
+  delay: 5
+    timeout: 5
+    sensors:
+      - name: SMApwrL1
+        unit_of_measurement: kW
+        slave: 3
+        address: 30777
+        data_type: uint32
 
