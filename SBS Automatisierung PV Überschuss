@@ -1,0 +1,75 @@
+alias: BYD Akku PV Überschuss laden
+description: ""
+triggers:
+  - trigger: state
+    entity_id:
+      - sensor.maximaler_ueberschuss_fuer_akkuladung_watt
+conditions: []
+actions:
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: input_boolean.akku_opti_automatik
+            state: "on"
+          - condition: numeric_state
+            entity_id: sensor.solcast_pv_forecast_prognose_verbleibende_leistung_heute
+            above: 75
+            enabled: true
+          - condition: sun
+            after: sunrise
+        sequence:
+          - action: input_select.select_option
+            metadata: {}
+            data:
+              option: Akku schnell Laden
+            target:
+              entity_id: input_select.akkusteuerung_sma_wr
+          - action: input_number.set_value
+            metadata: {}
+            data:
+              value: 500
+            target:
+              entity_id: input_number.akkusteuerung_ladestaerke_soll
+        alias: Prognose über 75kwh
+      - conditions:
+          - condition: state
+            entity_id: input_boolean.akku_opti_automatik
+            state: "on"
+          - condition: sun
+            after: sunrise
+          - condition: numeric_state
+            entity_id: sensor.solcast_pv_forecast_prognose_verbleibende_leistung_heute
+            above: 30
+            below: 75
+        sequence:
+          - action: input_select.select_option
+            metadata: {}
+            data:
+              option: Akku schnell Laden
+            target:
+              entity_id: input_select.akkusteuerung_sma_wr
+          - action: input_number.set_value
+            metadata: {}
+            data:
+              value: 1000
+            target:
+              entity_id: input_number.akkusteuerung_ladestaerke_soll
+        alias: Prognose zwischen 30-50kwh
+      - conditions:
+          - condition: state
+            entity_id: input_boolean.akku_opti_automatik
+            state: "on"
+          - condition: sun
+            after: sunrise
+          - condition: numeric_state
+            entity_id: sensor.solcast_pv_forecast_prognose_verbleibende_leistung_heute
+            below: 25
+        sequence:
+          - action: input_select.select_option
+            metadata: {}
+            data:
+              option: Normal Modus
+            target:
+              entity_id: input_select.akkusteuerung_sma_wr
+        alias: Prognose unter 25kwh
+mode: single
