@@ -31,7 +31,7 @@ actions:
     then:
       - alias: Betriebsart des BMS (Voreinstellung)
         data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40236
           slave: 3
           value:
@@ -40,7 +40,7 @@ actions:
         action: modbus.write_register
       - alias: Minimale Batterieladeleistung (40793)
         data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40793
           slave: 3
           value:
@@ -49,7 +49,7 @@ actions:
         action: modbus.write_register
       - alias: Maximale Batterieladeleistung (40795)
         data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40795
           slave: 3
           value:
@@ -60,7 +60,7 @@ actions:
         action: modbus.write_register
       - alias: Minimale Batterieentladeleistung (40797)
         data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40797
           slave: 3
           value:
@@ -69,7 +69,7 @@ actions:
         action: modbus.write_register
       - alias: Maximale Batterieentladeleistung (40799)
         data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40799
           slave: 3
           value:
@@ -79,7 +79,7 @@ actions:
               int)) }}
         action: modbus.write_register
       - data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40801
           slave: 3
           value:
@@ -99,7 +99,7 @@ actions:
     then:
       - alias: Betriebsart des BMS (Voreinstellung)
         data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40236
           slave: 3
           value:
@@ -107,7 +107,7 @@ actions:
             - 2290
         action: modbus.write_register
       - data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40793
           slave: 3
           value:
@@ -117,7 +117,7 @@ actions:
         alias: Minimale Batterieladeleistung (40793)
       - alias: Maximale Batterieladeleistung (40795)
         data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40795
           slave: 3
           value:
@@ -128,7 +128,7 @@ actions:
         action: modbus.write_register
       - alias: Minimale Batterieentladeleistung (40797)
         data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40797
           slave: 3
           value:
@@ -139,7 +139,7 @@ actions:
         action: modbus.write_register
       - alias: Maximale Batterieentladeleistung (40799)
         data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40799
           slave: 3
           value:
@@ -149,7 +149,7 @@ actions:
               int)) }}
         action: modbus.write_register
       - data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40801
           slave: 3
           value:
@@ -168,7 +168,7 @@ actions:
         enabled: false
     then:
       - data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40236
           slave: 3
           value:
@@ -177,7 +177,7 @@ actions:
         action: modbus.write_register
         alias: Betriebsart des BMS (Voreinstellung)
       - data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40793
           slave: 3
           value:
@@ -187,7 +187,7 @@ actions:
         alias: Minimale Batterieladeleistung (40793)
       - alias: Maximale Batterieladeleistung (40795)
         data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40795
           slave: 3
           value:
@@ -196,7 +196,7 @@ actions:
         action: modbus.write_register
       - alias: Minimale Batterieentladeleistung (40797)
         data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40797
           slave: 3
           value:
@@ -204,7 +204,7 @@ actions:
             - 0
         action: modbus.write_register
       - data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40799
           slave: 3
           value:
@@ -213,7 +213,7 @@ actions:
         action: modbus.write_register
         alias: Maximale Batterieentladeleistung (40799)
       - data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40801
           slave: 3
           value:
@@ -232,7 +232,7 @@ actions:
         enabled: false
     then:
       - data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40236
           slave: 3
           value:
@@ -241,7 +241,7 @@ actions:
         action: modbus.write_register
         alias: Betriebsart des BMS (Voreinstellung)
       - data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40793
           slave: 3
           value:
@@ -251,7 +251,7 @@ actions:
         alias: Minimale Batterieladeleistung (40793)
       - alias: Maximale Batterieladeleistung (40795)
         data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40795
           slave: 3
           value:
@@ -260,7 +260,7 @@ actions:
         action: modbus.write_register
       - alias: Minimale Batterieentladeleistung (40797)
         data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40797
           slave: 3
           value:
@@ -269,7 +269,7 @@ actions:
         action: modbus.write_register
       - alias: Maximale Batterieentladeleistung (40799)
         data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40799
           slave: 3
           value:
@@ -277,7 +277,7 @@ actions:
             - 5000
         action: modbus.write_register
       - data:
-          hub: sma-sr_wr
+          hub: sma-sbs
           address: 40801
           slave: 3
           value:
