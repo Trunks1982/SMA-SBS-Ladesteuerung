@@ -4,7 +4,7 @@ Diese Home Assistant-Automatisierung ermöglicht die flexible Steuerung eines SM
 
 ## ⚙️ Funktionen
 
-- **Modusbasierte Steuerung**: Unterstützt verschiedene Betriebsmodi wie "Max Ladeleistung", "Maxx Entladeleistung", "Akku Pause (Standby)" und "Normal Modus".
+- **Modusbasierte Steuerung**: Unterstützt verschiedene Betriebsmodi wie "Max Ladeleistung", "Max Entladeleistung", "Akku Pause (Standby)" und "Normal Modus".
 - **Modbus-Kommunikation**: Sendet spezifische Befehle an den Wechselrichter, um Lade- und Entladeleistungen sowie andere Parameter anzupassen.
 - **Automatische Trigger**: Reagiert auf Änderungen von Eingabehilfen oder alle 5 Minuten, um die aktuellen Einstellungen zu überprüfen und anzuwenden.
 - **Flexibilität**: Ermöglicht die einfache Anpassung der Lade- und Entladeleistungen durch Benutzer über die Home Assistant-Oberfläche.
