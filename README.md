@@ -28,12 +28,10 @@ Um die Automatisierung vollständig nutzen zu können, müssen folgende Eingabeh
 - **`input_number.akkusteuerung_entladestaerke_soll`**  
   Gewünschte Entladeleistung in Watt.
 
-- **`input_number.akkusteuerung_02c_ladestaerke`**  
-  Ladeleistung für den 0.2C-Modus in Watt.
 
 ### 🔘 Schalter
 
-- **`input_boolean.akku_opti_automatik`**  
+- **`input_boolean.akku_automatik`**  
   Aktiviert oder deaktiviert die automatische Steuerung.
 
 Diese Helfer können über die Home Assistant-Benutzeroberfläche unter **Einstellungen > Geräte & Dienste > Helfer** erstellt werden.
