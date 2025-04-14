@@ -199,7 +199,7 @@ action:
               hub: !input modbus_hub
               address: !input register_max_lade
               slave: !input modbus_slave
-              value: [0, "{{ states(!input.ladestaerke_soll) | int }}"]
+              value: [0, "{{ states('" ~ !input.ladestaerke_soll ~ "') | int }}"]
           - service: modbus.write_register
             data:
               hub: !input modbus_hub
@@ -208,15 +208,15 @@ action:
               value: [0, 0]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_max_entlade
-              slave: !input modbus_slave
-              value: [0, !input value_max_entlade_schnell]
+              hub: !input.modbus_hub
+              address: !input.register_max_entlade
+              slave: !input.modbus_slave
+              value: [0, !input.value_max_entlade_schnell]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_netzaustausch
-              slave: !input modbus_slave
+              hub: !input.modbus_hub
+              address: !input.register_netzaustausch
+              slave: !input.modbus_slave
               value: [0, 0]
 
       # --- Fall: Akku schnell Entladen ---
@@ -230,39 +230,39 @@ action:
         sequence:
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_bms_mode
-              slave: !input modbus_slave
-              value: [0, !input value_bms_mode_schnell_entladen]
+              hub: !input.modbus_hub
+              address: !input.register_bms_mode
+              slave: !input.modbus_slave
+              value: [0, !input.value_bms_mode_schnell_entladen]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_min_lade
-              slave: !input modbus_slave
+              hub: !input.modbus_hub
+              address: !input.register_min_lade
+              slave: !input.modbus_slave
               value: [0, 0]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_max_lade
-              slave: !input modbus_slave
-              value: [0, !input value_max_lade_schnell]
+              hub: !input.modbus_hub
+              address: !input.register_max_lade
+              slave: !input.modbus_slave
+              value: [0, !input.value_max_lade_schnell]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_min_entlade
-              slave: !input modbus_slave
-              value: [0, "{{ states(!input.entladestaerke_soll) | int }}"]
+              hub: !input.modbus_hub
+              address: !input.register_min_entlade
+              slave: !input.modbus_slave
+              value: [0, "{{ states('" ~ !input.entladestaerke_soll ~ "') | int }}"]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_max_entlade
-              slave: !input modbus_slave
-              value: [0, "{{ states(!input.entladestaerke_soll) | int }}"]
+              hub: !input.modbus_hub
+              address: !input.register_max_entlade
+              slave: !input.modbus_slave
+              value: [0, "{{ states('" ~ !input.entladestaerke_soll ~ "') | int }}"]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_netzaustausch
-              slave: !input modbus_slave
+              hub: !input.modbus_hub
+              address: !input.register_netzaustausch
+              slave: !input.modbus_slave
               value: [0, 0]
 
       # --- Fall: Akku Pause ---
@@ -276,39 +276,39 @@ action:
         sequence:
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_bms_mode
-              slave: !input modbus_slave
-              value: [0, !input value_bms_mode_normal]
+              hub: !input.modbus_hub
+              address: !input.register_bms_mode
+              slave: !input.modbus_slave
+              value: [0, !input.value_bms_mode_normal]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_min_lade
-              slave: !input modbus_slave
+              hub: !input.modbus_hub
+              address: !input.register_min_lade
+              slave: !input.modbus_slave
               value: [0, 0]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_max_lade
-              slave: !input modbus_slave
+              hub: !input.modbus_hub
+              address: !input.register_max_lade
+              slave: !input.modbus_slave
               value: [0, 0]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_min_entlade
-              slave: !input modbus_slave
+              hub: !input.modbus_hub
+              address: !input.register_min_entlade
+              slave: !input.modbus_slave
               value: [0, 0]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_max_entlade
-              slave: !input modbus_slave
+              hub: !input.modbus_hub
+              address: !input.register_max_entlade
+              slave: !input.modbus_slave
               value: [0, 0]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_netzaustausch
-              slave: !input modbus_slave
+              hub: !input.modbus_hub
+              address: !input.register_netzaustausch
+              slave: !input.modbus_slave
               value: [0, 0]
 
       # --- Fall: Akku 0.2C laden ---
@@ -322,39 +322,39 @@ action:
         sequence:
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_bms_mode
-              slave: !input modbus_slave
-              value: [0, !input value_bms_mode_normal]
+              hub: !input.modbus_hub
+              address: !input.register_bms_mode
+              slave: !input.modbus_slave
+              value: [0, !input.value_bms_mode_normal]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_min_lade
-              slave: !input modbus_slave
+              hub: !input.modbus_hub
+              address: !input.register_min_lade
+              slave: !input.modbus_slave
               value: [0, 0]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_max_lade
-              slave: !input modbus_slave
-              value: [0, "{{ states(!input.ladestaerke_02c) | int }}"]
+              hub: !input.modbus_hub
+              address: !input.register_max_lade
+              slave: !input.modbus_slave
+              value: [0, "{{ states('" ~ !input.ladestaerke_02c ~ "') | int }}"]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_min_entlade
-              slave: !input modbus_slave
+              hub: !input.modbus_hub
+              address: !input.register_min_entlade
+              slave: !input.modbus_slave
               value: [0, 0]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_max_entlade
-              slave: !input modbus_slave
+              hub: !input.modbus_hub
+              address: !input.register_max_entlade
+              slave: !input.modbus_slave
               value: [0, 0]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_netzaustausch
-              slave: !input modbus_slave
+              hub: !input.modbus_hub
+              address: !input.register_netzaustausch
+              slave: !input.modbus_slave
               value: [0, 0]
 
       # --- Fall: Normal Modus ---
@@ -368,38 +368,38 @@ action:
         sequence:
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_bms_mode
-              slave: !input modbus_slave
-              value: [0, !input value_bms_mode_normal]
+              hub: !input.modbus_hub
+              address: !input.register_bms_mode
+              slave: !input.modbus_slave
+              value: [0, !input.value_bms_mode_normal]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_min_lade
-              slave: !input modbus_slave
+              hub: !input.modbus_hub
+              address: !input.register_min_lade
+              slave: !input.modbus_slave
               value: [0, 0]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_max_lade
-              slave: !input modbus_slave
-              value: [0, !input value_max_lade_schnell]
+              hub: !input.modbus_hub
+              address: !input.register_max_lade
+              slave: !input.modbus_slave
+              value: [0, !input.value_max_lade_schnell]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_min_entlade
-              slave: !input modbus_slave
+              hub: !input.modbus_hub
+              address: !input.register_min_entlade
+              slave: !input.modbus_slave
               value: [0, 0]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_max_entlade
-              slave: !input modbus_slave
-              value: [0, !input value_max_entlade_normal]
+              hub: !input.modbus_hub
+              address: !input.register_max_entlade
+              slave: !input.modbus_slave
+              value: [0, !input.value_max_entlade_normal]
           - service: modbus.write_register
             data:
-              hub: !input modbus_hub
-              address: !input register_netzaustausch
-              slave: !input modbus_slave
+              hub: !input.modbus_hub
+              address: !input.register_netzaustausch
+              slave: !input.modbus_slave
               value: [0, 0]
 mode: single
