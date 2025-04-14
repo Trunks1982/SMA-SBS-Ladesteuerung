@@ -23,10 +23,11 @@ actions:
     if:
       - condition: state
         entity_id: input_select.akkusteuerung_sma_wr
-        state: Akku schnell Laden
+        state: Max Ladeleistung (W)
       - condition: state
         entity_id: input_boolean.akku_automatik
         state: "on"
+        enabled: false
     then:
       - alias: Betriebsart des BMS (Voreinstellung)
         data:
@@ -90,10 +91,11 @@ actions:
     if:
       - condition: state
         entity_id: input_select.akkusteuerung_sma_wr
-        state: Akku schnell Entladen
+        state: Max Entlade Leistung (W)
       - condition: state
         entity_id: input_boolean.akku_automatik
         state: "on"
+        enabled: false
     then:
       - alias: Betriebsart des BMS (Voreinstellung)
         data:
@@ -159,10 +161,11 @@ actions:
     if:
       - condition: state
         entity_id: input_select.akkusteuerung_sma_wr
-        state: Akku Pause
+        state: Akku Pause ( Standby)
       - condition: state
         entity_id: input_boolean.akku_automatik
         state: "on"
+        enabled: false
     then:
       - data:
           hub: sma-sr_wr
@@ -226,6 +229,7 @@ actions:
       - condition: state
         entity_id: input_boolean.akku_automatik
         state: "on"
+        enabled: false
     then:
       - data:
           hub: sma-sr_wr
