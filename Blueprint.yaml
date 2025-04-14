@@ -1,50 +1,59 @@
 blueprint:
   name: Akkusteuerung via Modbus (konfigurierbar)
   description: >
-    Dieser Blueprint steuert über Modbus verschiedene Lade- und Entladeprofile
-    der Batterie. Alle wichtigen Parameter (Input‑Entities, Modbus-Hub, Slave, Registeradressen und
-    Sollwerte) können individuell angepasst werden.
+    Dieser Blueprint steuert über Modbus verschiedene Lade- und Entladeprofile der Batterie.
+    Alle wichtigen Parameter (Input‑Entities, Modbus-Hub, Slave, Registeradressen und Sollwerte)
+    können individuell konfiguriert werden.
   domain: automation
   input:
-    # Allgemeine Eingänge
+    # Auswahl des Akkusteuerungsmodus
     battery_control_select:
       name: Akkusteuerung Auswahl
-      description: "Wähle den Akkusteuerungsmodus (z. B. 'Akku schnell Laden', 'Akku schnell Entladen', 'Akku Pause', 'Akku 0.2C laden' oder 'Normal Modus')."
+      description: >
+        Wähle den Akkusteuerungsmodus. Mögliche Zustände sind:
+        "Akku schnell Laden", "Akku schnell Entladen", "Akku Pause", "Akku 0.2C laden" und "Normal Modus".
       selector:
         entity:
           domain: input_select
+
+    # Schalter ob die Akkusteuerung aktiv sein soll
     auto_mode_toggle:
       name: Akkubetrieb Automatik
       description: "Schalter, ob die automatisierte Akkusteuerung aktiv ist."
       selector:
         entity:
           domain: input_boolean
+
+    # Sollwerte, die per Input-Number festgelegt sind
     ladestaerke_soll:
       name: Batterieladeleistung Sollwert
-      description: "Sollwert für die maximale Batterieladeleistung (Modus 'Akku schnell Laden')."
-      selector:
-        entity:
-          domain: input_number
-    entladestaerke_soll:
-      name: Batterieentladeleistung Sollwert
-      description: "Sollwert für die maximale Batterieentladeleistung (Modus 'Akku schnell Entladen')."
-      selector:
-        entity:
-          domain: input_number
-    ladestaerke_02c:
-      name: 0.2C Ladeleistung
-      description: "Sollwert für die maximale Batterieladeleistung (Modus 'Akku 0.2C laden')."
+      description: "Sollwert für die maximale Batterieladeleistung (für 'Akku schnell Laden')."
       selector:
         entity:
           domain: input_number
 
-    # Modbus-Konfiguration
+    entladestaerke_soll:
+      name: Batterieentladeleistung Sollwert
+      description: "Sollwert für die maximale Batterieentladeleistung (für 'Akku schnell Entladen')."
+      selector:
+        entity:
+          domain: input_number
+
+    ladestaerke_02c:
+      name: 0.2C Ladeleistung
+      description: "Sollwert für die maximale Batterieladeleistung (für 'Akku 0.2C laden')."
+      selector:
+        entity:
+          domain: input_number
+
+    # Modbus Konfiguration
     modbus_hub:
       name: Modbus Hub
       description: "Name des Modbus Hubs (z. B. sma-sr_wr)."
       default: sma-sr_wr
       selector:
-        text:
+        text: {}
+        
     modbus_slave:
       name: Modbus Slave
       description: "Slave Nummer im Modbus-Netz (z. B. 3)."
@@ -54,7 +63,7 @@ blueprint:
           min: 1
           max: 10
 
-    # Registeradressen (anpassbar falls nötig)
+    # Registeradressen
     register_bms_mode:
       name: Register BMS Betriebsart
       description: "Registeradresse für die Betriebsart (BMS)."
@@ -62,52 +71,62 @@ blueprint:
       selector:
         number:
           min: 0
+          max: 65535
     register_min_lade:
       name: Register Minimale Batterieladeleistung
       default: 40793
       selector:
         number:
           min: 0
+          max: 65535
     register_max_lade:
       name: Register Maximale Batterieladeleistung
       default: 40795
       selector:
         number:
           min: 0
+          max: 65535
     register_min_entlade:
       name: Register Minimale Batterieentladeleistung
       default: 40797
       selector:
         number:
           min: 0
+          max: 65535
     register_max_entlade:
       name: Register Maximale Batterieentladeleistung
       default: 40799
       selector:
         number:
           min: 0
+          max: 65535
     register_netzaustausch:
       name: Register Sollwert Netzaustauschleistung
       default: 40801
       selector:
         number:
           min: 0
+          max: 65535
 
-    # Fixwerte pro Modus (anpassbar falls in der Zukunft dynamisch konfigurierbar gemacht werden soll)
+    # Fixwerte pro Betriebsart (anpassbar)
     value_bms_mode_normal:
       name: Wert BMS Betriebsart Normal
-      description: "Wert für die Betriebsart (Normal/Voreinstellung), wenn Laden oder Pause."
+      description: >
+        Wert für die Betriebsart (Normal/Voreinstellung) bei "Akku schnell Laden",
+        "Akku Pause", "Akku 0.2C laden" und "Normal Modus".
       default: 2424
       selector:
         number:
           min: 0
+          max: 10000
     value_bms_mode_schnell_entladen:
       name: Wert BMS Betriebsart Schnell Entladen
-      description: "Wert für die Betriebsart (schnell Entladen)."
+      description: "Wert für die Betriebsart bei 'Akku schnell Entladen'."
       default: 2290
       selector:
         number:
           min: 0
+          max: 10000
     value_max_entlade_normal:
       name: Wert Maximale Batterieentladeleistung Normal
       description: "Wert für maximale Batterieentladeleistung im Normal Modus."
@@ -115,6 +134,7 @@ blueprint:
       selector:
         number:
           min: 0
+          max: 10000
     value_max_entlade_schnell:
       name: Wert Maximale Batterieentladeleistung Schnell
       description: "Wert für maximale Batterieentladeleistung im Schnell-Entlade Modus."
@@ -122,6 +142,7 @@ blueprint:
       selector:
         number:
           min: 0
+          max: 10000
     value_max_lade_schnell:
       name: Wert Maximale Batterieladeleistung Schnell
       description: "Wert für maximale Batterieladeleistung im Schnell-Lade Modus."
@@ -129,9 +150,10 @@ blueprint:
       selector:
         number:
           min: 0
+          max: 10000
 
 trigger:
-  # Trigger: Wenn sich einer der relevanten Eingabewerte ändert, zusätzlich periodisch und beim Start von HA
+  # Trigger: Reaktion auf Änderungen der Eingabe-Entities
   - platform: state
     entity_id:
       - !input battery_control_select
@@ -140,12 +162,14 @@ trigger:
       - !input ladestaerke_02c
     for:
       seconds: 1
+  # Trigger: alle 5 Minuten
   - platform: time_pattern
     minutes: '/5'
+  # Trigger: beim Start von Home Assistant
   - platform: event
     event_type: start
 
-condition: []  # Keine globalen Bedingungen – alle Prüfungen erfolgen in den choose-Blöcken
+condition: []
 
 action:
   - choose:
@@ -175,7 +199,6 @@ action:
               hub: !input modbus_hub
               address: !input register_max_lade
               slave: !input modbus_slave
-              # Hier wird der Sollwert direkt von der Input-Number gelesen
               value: [0, "{{ states(!input.ladestaerke_soll) | int }}"]
           - service: modbus.write_register
             data:
