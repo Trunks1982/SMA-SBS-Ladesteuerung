@@ -17,10 +17,9 @@ Um die Automatisierung vollständig nutzen zu können, müssen folgende Eingabeh
 
 - **`input_select.akkusteuerung_sma_wr`**  
   Auswahl des gewünschten Betriebsmodus. Mögliche Optionen:
-  - `Akku schnell Laden`
-  - `Akku schnell Entladen`
-  - `Akku 0.2C laden`
-  - `Akku Pause`
+  - `Max Ladeleistung (W)`
+  - `Max Entladeleistung (W)`
+  - `Akku Pause ( Standby)`
   - `Normal Modus`
 
 - **`input_number.akkusteuerung_ladestaerke_soll`**  
