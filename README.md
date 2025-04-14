@@ -45,6 +45,10 @@ Stelle sicher, dass dein SMA-Wechselrichter über Modbus erreichbar ist und korr
 
 ```yaml
 modbus:
+- name: sma-sr_wr
+  type: tcp
+  host: 192.xxx.x.xx
+  port: 502
   delay: 5
     timeout: 5
     sensors:
