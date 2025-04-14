@@ -12,6 +12,9 @@ actions:
             entity_id: input_boolean.akku_opti_automatik
             state: "on"
           - condition: numeric_state
+            entity_id: sensor.maximaler_ueberschuss_fuer_akkuladung_watt
+            above: 1000
+          - condition: numeric_state
             entity_id: sensor.solcast_pv_forecast_prognose_verbleibende_leistung_heute
             above: 75
             enabled: true
@@ -21,7 +24,7 @@ actions:
           - action: input_select.select_option
             metadata: {}
             data:
-              option: Akku schnell Laden
+              option: Max Ladeleistung (W)
             target:
               entity_id: input_select.akkusteuerung_sma_wr
           - action: input_number.set_value
@@ -35,6 +38,9 @@ actions:
           - condition: state
             entity_id: input_boolean.akku_opti_automatik
             state: "on"
+          - condition: numeric_state
+            entity_id: sensor.maximaler_ueberschuss_fuer_akkuladung_watt
+            above: 1000
           - condition: sun
             after: sunrise
           - condition: numeric_state
@@ -45,7 +51,7 @@ actions:
           - action: input_select.select_option
             metadata: {}
             data:
-              option: Akku schnell Laden
+              option: Max Entlade Leistung (W)
             target:
               entity_id: input_select.akkusteuerung_sma_wr
           - action: input_number.set_value
@@ -59,6 +65,9 @@ actions:
           - condition: state
             entity_id: input_boolean.akku_opti_automatik
             state: "on"
+          - condition: numeric_state
+            entity_id: sensor.maximaler_ueberschuss_fuer_akkuladung_watt
+            above: 1000
           - condition: sun
             after: sunrise
           - condition: numeric_state
