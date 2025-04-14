@@ -1,0 +1,382 @@
+blueprint:
+  name: Akkusteuerung via Modbus (konfigurierbar)
+  description: >
+    Dieser Blueprint steuert über Modbus verschiedene Lade- und Entladeprofile
+    der Batterie. Alle wichtigen Parameter (Input‑Entities, Modbus-Hub, Slave, Registeradressen und
+    Sollwerte) können individuell angepasst werden.
+  domain: automation
+  input:
+    # Allgemeine Eingänge
+    battery_control_select:
+      name: Akkusteuerung Auswahl
+      description: "Wähle den Akkusteuerungsmodus (z. B. 'Akku schnell Laden', 'Akku schnell Entladen', 'Akku Pause', 'Akku 0.2C laden' oder 'Normal Modus')."
+      selector:
+        entity:
+          domain: input_select
+    auto_mode_toggle:
+      name: Akkubetrieb Automatik
+      description: "Schalter, ob die automatisierte Akkusteuerung aktiv ist."
+      selector:
+        entity:
+          domain: input_boolean
+    ladestaerke_soll:
+      name: Batterieladeleistung Sollwert
+      description: "Sollwert für die maximale Batterieladeleistung (Modus 'Akku schnell Laden')."
+      selector:
+        entity:
+          domain: input_number
+    entladestaerke_soll:
+      name: Batterieentladeleistung Sollwert
+      description: "Sollwert für die maximale Batterieentladeleistung (Modus 'Akku schnell Entladen')."
+      selector:
+        entity:
+          domain: input_number
+    ladestaerke_02c:
+      name: 0.2C Ladeleistung
+      description: "Sollwert für die maximale Batterieladeleistung (Modus 'Akku 0.2C laden')."
+      selector:
+        entity:
+          domain: input_number
+
+    # Modbus-Konfiguration
+    modbus_hub:
+      name: Modbus Hub
+      description: "Name des Modbus Hubs (z. B. sma-sr_wr)."
+      default: sma-sr_wr
+      selector:
+        text:
+    modbus_slave:
+      name: Modbus Slave
+      description: "Slave Nummer im Modbus-Netz (z. B. 3)."
+      default: 3
+      selector:
+        number:
+          min: 1
+          max: 10
+
+    # Registeradressen (anpassbar falls nötig)
+    register_bms_mode:
+      name: Register BMS Betriebsart
+      description: "Registeradresse für die Betriebsart (BMS)."
+      default: 40236
+      selector:
+        number:
+          min: 0
+    register_min_lade:
+      name: Register Minimale Batterieladeleistung
+      default: 40793
+      selector:
+        number:
+          min: 0
+    register_max_lade:
+      name: Register Maximale Batterieladeleistung
+      default: 40795
+      selector:
+        number:
+          min: 0
+    register_min_entlade:
+      name: Register Minimale Batterieentladeleistung
+      default: 40797
+      selector:
+        number:
+          min: 0
+    register_max_entlade:
+      name: Register Maximale Batterieentladeleistung
+      default: 40799
+      selector:
+        number:
+          min: 0
+    register_netzaustausch:
+      name: Register Sollwert Netzaustauschleistung
+      default: 40801
+      selector:
+        number:
+          min: 0
+
+    # Fixwerte pro Modus (anpassbar falls in der Zukunft dynamisch konfigurierbar gemacht werden soll)
+    value_bms_mode_normal:
+      name: Wert BMS Betriebsart Normal
+      description: "Wert für die Betriebsart (Normal/Voreinstellung), wenn Laden oder Pause."
+      default: 2424
+      selector:
+        number:
+          min: 0
+    value_bms_mode_schnell_entladen:
+      name: Wert BMS Betriebsart Schnell Entladen
+      description: "Wert für die Betriebsart (schnell Entladen)."
+      default: 2290
+      selector:
+        number:
+          min: 0
+    value_max_entlade_normal:
+      name: Wert Maximale Batterieentladeleistung Normal
+      description: "Wert für maximale Batterieentladeleistung im Normal Modus."
+      default: 5000
+      selector:
+        number:
+          min: 0
+    value_max_entlade_schnell:
+      name: Wert Maximale Batterieentladeleistung Schnell
+      description: "Wert für maximale Batterieentladeleistung im Schnell-Entlade Modus."
+      default: 4600
+      selector:
+        number:
+          min: 0
+    value_max_lade_schnell:
+      name: Wert Maximale Batterieladeleistung Schnell
+      description: "Wert für maximale Batterieladeleistung im Schnell-Lade Modus."
+      default: 4600
+      selector:
+        number:
+          min: 0
+
+trigger:
+  # Trigger: Wenn sich einer der relevanten Eingabewerte ändert, zusätzlich periodisch und beim Start von HA
+  - platform: state
+    entity_id:
+      - !input battery_control_select
+      - !input ladestaerke_soll
+      - !input entladestaerke_soll
+      - !input ladestaerke_02c
+    for:
+      seconds: 1
+  - platform: time_pattern
+    minutes: '/5'
+  - platform: event
+    event_type: start
+
+condition: []  # Keine globalen Bedingungen – alle Prüfungen erfolgen in den choose-Blöcken
+
+action:
+  - choose:
+      # --- Fall: Akku schnell Laden ---
+      - conditions:
+          - condition: state
+            entity_id: !input battery_control_select
+            state: "Akku schnell Laden"
+          - condition: state
+            entity_id: !input auto_mode_toggle
+            state: "on"
+        sequence:
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_bms_mode
+              slave: !input modbus_slave
+              value: [0, !input value_bms_mode_normal]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_min_lade
+              slave: !input modbus_slave
+              value: [0, 0]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_max_lade
+              slave: !input modbus_slave
+              # Hier wird der Sollwert direkt von der Input-Number gelesen
+              value: [0, "{{ states(!input.ladestaerke_soll) | int }}"]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_min_entlade
+              slave: !input modbus_slave
+              value: [0, 0]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_max_entlade
+              slave: !input modbus_slave
+              value: [0, !input value_max_entlade_schnell]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_netzaustausch
+              slave: !input modbus_slave
+              value: [0, 0]
+
+      # --- Fall: Akku schnell Entladen ---
+      - conditions:
+          - condition: state
+            entity_id: !input battery_control_select
+            state: "Akku schnell Entladen"
+          - condition: state
+            entity_id: !input auto_mode_toggle
+            state: "on"
+        sequence:
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_bms_mode
+              slave: !input modbus_slave
+              value: [0, !input value_bms_mode_schnell_entladen]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_min_lade
+              slave: !input modbus_slave
+              value: [0, 0]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_max_lade
+              slave: !input modbus_slave
+              value: [0, !input value_max_lade_schnell]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_min_entlade
+              slave: !input modbus_slave
+              value: [0, "{{ states(!input.entladestaerke_soll) | int }}"]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_max_entlade
+              slave: !input modbus_slave
+              value: [0, "{{ states(!input.entladestaerke_soll) | int }}"]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_netzaustausch
+              slave: !input modbus_slave
+              value: [0, 0]
+
+      # --- Fall: Akku Pause ---
+      - conditions:
+          - condition: state
+            entity_id: !input battery_control_select
+            state: "Akku Pause"
+          - condition: state
+            entity_id: !input auto_mode_toggle
+            state: "on"
+        sequence:
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_bms_mode
+              slave: !input modbus_slave
+              value: [0, !input value_bms_mode_normal]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_min_lade
+              slave: !input modbus_slave
+              value: [0, 0]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_max_lade
+              slave: !input modbus_slave
+              value: [0, 0]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_min_entlade
+              slave: !input modbus_slave
+              value: [0, 0]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_max_entlade
+              slave: !input modbus_slave
+              value: [0, 0]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_netzaustausch
+              slave: !input modbus_slave
+              value: [0, 0]
+
+      # --- Fall: Akku 0.2C laden ---
+      - conditions:
+          - condition: state
+            entity_id: !input battery_control_select
+            state: "Akku 0.2C laden"
+          - condition: state
+            entity_id: !input auto_mode_toggle
+            state: "on"
+        sequence:
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_bms_mode
+              slave: !input modbus_slave
+              value: [0, !input value_bms_mode_normal]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_min_lade
+              slave: !input modbus_slave
+              value: [0, 0]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_max_lade
+              slave: !input modbus_slave
+              value: [0, "{{ states(!input.ladestaerke_02c) | int }}"]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_min_entlade
+              slave: !input modbus_slave
+              value: [0, 0]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_max_entlade
+              slave: !input modbus_slave
+              value: [0, 0]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_netzaustausch
+              slave: !input modbus_slave
+              value: [0, 0]
+
+      # --- Fall: Normal Modus ---
+      - conditions:
+          - condition: state
+            entity_id: !input battery_control_select
+            state: "Normal Modus"
+          - condition: state
+            entity_id: !input auto_mode_toggle
+            state: "on"
+        sequence:
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_bms_mode
+              slave: !input modbus_slave
+              value: [0, !input value_bms_mode_normal]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_min_lade
+              slave: !input modbus_slave
+              value: [0, 0]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_max_lade
+              slave: !input modbus_slave
+              value: [0, !input value_max_lade_schnell]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_min_entlade
+              slave: !input modbus_slave
+              value: [0, 0]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_max_entlade
+              slave: !input modbus_slave
+              value: [0, !input value_max_entlade_normal]
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              address: !input register_netzaustausch
+              slave: !input modbus_slave
+              value: [0, 0]
+mode: single
