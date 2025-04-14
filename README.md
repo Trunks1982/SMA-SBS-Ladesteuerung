@@ -47,11 +47,6 @@ modbus:
   host: 192.xxx.x.xx
   port: 502
   delay: 5
-    timeout: 5
+  timeout: 5
     sensors:
-      - name: SMApwrL1
-        unit_of_measurement: kW
-        slave: 3
-        address: 30777
-        data_type: uint32
 
