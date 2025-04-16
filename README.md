@@ -8,6 +8,7 @@ Diese Home Assistant-Automatisierung ermöglicht die flexible Steuerung eines SM
 - **Modbus-Kommunikation**: Sendet spezifische Befehle an den Wechselrichter, um Lade- und Entladeleistungen sowie andere Parameter anzupassen.
 - **Automatische Trigger**: Reagiert auf Änderungen von Eingabehilfen oder alle 5 Minuten, um die aktuellen Einstellungen zu überprüfen und anzuwenden.
 - **Flexibilität**: Ermöglicht die einfache Anpassung der Lade- und Entladeleistungen durch Benutzer über die Home Assistant-Oberfläche.
+- **Batterie Laufzeit Berechnung**: Hier wird ihnen angezeigt wie lange der Akku noch durch hällt beim aktuellen entladen der Batterie.
 
 ## 🧰 Erforderliche Helfer
 
