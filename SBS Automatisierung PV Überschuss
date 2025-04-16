@@ -1,15 +1,14 @@
 alias: BYD Akku PV Überschuss laden
 description: ""
 triggers:
-  - trigger: state
-    entity_id:
-      - sensor.maximaler_ueberschuss_fuer_akkuladung_watt
+  - trigger: time_pattern
+    minutes: /30
 conditions: []
 actions:
   - choose:
       - conditions:
           - condition: state
-            entity_id: input_boolean.akku_opti_automatik
+            entity_id: input_boolean.akku_automatik
             state: "on"
           - condition: numeric_state
             entity_id: sensor.maximaler_ueberschuss_fuer_akkuladung_watt
@@ -36,7 +35,7 @@ actions:
         alias: Prognose über 75kwh
       - conditions:
           - condition: state
-            entity_id: input_boolean.akku_opti_automatik
+            entity_id: input_boolean.akku_automatik
             state: "on"
           - condition: numeric_state
             entity_id: sensor.maximaler_ueberschuss_fuer_akkuladung_watt
@@ -51,7 +50,7 @@ actions:
           - action: input_select.select_option
             metadata: {}
             data:
-              option: Max Entlade Leistung (W)
+              option: Max Ladeleistung (W)
             target:
               entity_id: input_select.akkusteuerung_sma_wr
           - action: input_number.set_value
@@ -63,7 +62,7 @@ actions:
         alias: Prognose zwischen 30-50kwh
       - conditions:
           - condition: state
-            entity_id: input_boolean.akku_opti_automatik
+            entity_id: input_boolean.akku_automatik
             state: "on"
           - condition: numeric_state
             entity_id: sensor.maximaler_ueberschuss_fuer_akkuladung_watt
@@ -72,7 +71,7 @@ actions:
             after: sunrise
           - condition: numeric_state
             entity_id: sensor.solcast_pv_forecast_prognose_verbleibende_leistung_heute
-            below: 25
+            below: 20
         sequence:
           - action: input_select.select_option
             metadata: {}
@@ -80,5 +79,5 @@ actions:
               option: Normal Modus
             target:
               entity_id: input_select.akkusteuerung_sma_wr
-        alias: Prognose unter 25kwh
+        alias: Prognose unter 20kwh
 mode: single
