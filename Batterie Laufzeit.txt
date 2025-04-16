@@ -1,0 +1,38 @@
+Gehört ihn die configuration.yaml:
+
+sensor:
+  - platform: statistics
+    name: "House Battery Load 30 mins"
+    entity_id: sensor.sn_3014676214_battery_power_discharge_total
+    state_characteristic: mean
+    max_age:
+      minutes: 30
+
+Diesen hier hab ich in der template.yaml ausgelagert:
+
+sensor:
+  - name: Batterie Laufzeit
+    unique_id: Batterie_Laufzeit
+    unit_of_measurement: "Std."
+    state: >
+       {% set soc = states('sensor.sn_3014676214_battery_soc_total') | float(0) %}
+       {% set capacity_kwh = 13.5 %}
+       {% set battery_power_w = states('sensor.house_battery_load_30_mins') | float(0) %}
+       {% set battery_power_kw = battery_power_w / 1000 %}
+    
+       {% set remaining_kwh = capacity_kwh * (soc / 100) %}
+       {% set missing_kwh = capacity_kwh - remaining_kwh %}
+       {% if battery_power_kw > 0 %}
+       {# Entladung #}
+       {% set hours_remaining = remaining_kwh / battery_power_kw %}
+       {{ hours_remaining | round(2) }}
+    
+       {% elif battery_power_kw < 0 %}
+       {# Ladung: beachte negatives Vorzeichen #}
+       {% set charge_kw = battery_power_kw | abs %}
+       {% set hours_to_full = missing_kwh / charge_kw %}
+       {{ hours_to_full | round(2) }}
+
+       {% else %}
+        0
+       {% endif %}
