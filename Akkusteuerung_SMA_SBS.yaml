@@ -36,7 +36,7 @@ actions:
           slave: 3
           value:
             - 0
-            - 2424
+            - 2289
         action: modbus.write_register
       - alias: Minimale Batterieladeleistung (40793)
         data:
@@ -78,7 +78,8 @@ actions:
               {{ ( (states('input_number.akkusteuerung_entladestaerke_soll') |
               int)) }}
         action: modbus.write_register
-      - data:
+      - alias: Sollwert der Netzaustauschleistung (40801)
+        data:
           hub: sma-sbs
           address: 40801
           slave: 3
@@ -86,7 +87,6 @@ actions:
             - 0
             - 0
         action: modbus.write_register
-        alias: Sollwert der Netzaustauschleistung (40801)
   - alias: Max Entladestärke (W)
     if:
       - condition: state
@@ -285,4 +285,74 @@ actions:
             - 0
         action: modbus.write_register
         alias: Sollwert der Netzaustauschleistung (40801)
+  - alias: Max Ladestärke Netz (W)
+    if:
+      - condition: state
+        entity_id: input_select.akkusteuerung_sma_wr
+        state: Netzladen
+      - condition: state
+        entity_id: input_boolean.akku_automatik
+        state: "on"
+        enabled: false
+    then:
+      - alias: Betriebsart des BMS (Voreinstellung)
+        data:
+          hub: sma-sbs
+          address: 40236
+          slave: 3
+          value:
+            - 0
+            - 2289
+        action: modbus.write_register
+      - alias: Minimale Batterieladeleistung (40793)
+        data:
+          hub: sma-sbs
+          address: 40793
+          slave: 3
+          value:
+            - 0
+            - >-
+              {{ ( (states('input_number.akkusteuerung_ladestaerke_soll') |
+              int)) }}
+        action: modbus.write_register
+      - alias: Maximale Batterieladeleistung (40795)
+        data:
+          hub: sma-sbs
+          address: 40795
+          slave: 3
+          value:
+            - 0
+            - >-
+              {{ ( (states('input_number.akkusteuerung_ladestaerke_soll') |
+              int)) }}
+        action: modbus.write_register
+      - alias: Minimale Batterieentladeleistung (40797)
+        data:
+          hub: sma-sbs
+          address: 40797
+          slave: 3
+          value:
+            - 0
+            - 0
+        action: modbus.write_register
+      - alias: Maximale Batterieentladeleistung (40799)
+        data:
+          hub: sma-sbs
+          address: 40799
+          slave: 3
+          value:
+            - 0
+            - >-
+              {{ ( (states('input_number.akkusteuerung_entladestaerke_soll') |
+              int)) }}
+        action: modbus.write_register
+      - alias: Sollwert der Netzaustauschleistung (40801)
+        data:
+          hub: sma-sbs
+          address: 40801
+          slave: 3
+          value:
+            - 0
+            - 0
+        action: modbus.write_register
 mode: single
