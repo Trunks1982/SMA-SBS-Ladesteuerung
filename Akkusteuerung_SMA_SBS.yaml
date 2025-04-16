@@ -14,7 +14,7 @@ triggers:
     trigger: state
   - enabled: true
     trigger: time_pattern
-    minutes: /5
+    minutes: /3
   - event: start
     trigger: homeassistant
 conditions: []
