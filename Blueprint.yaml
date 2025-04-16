@@ -8,54 +8,44 @@ blueprint:
   input:
     battery_control_select:
       name: Akkusteuerung Auswahl
-      description: "Wähle den Akkusteuerungsmodus (z. B. 'Akku schnell Laden', 'Akku schnell Entladen', 'Akku Pause', 'Akku 0.2C laden' oder 'Normal Modus')."
       selector:
         entity:
           domain: input_select
     auto_mode_toggle:
       name: Akkubetrieb Automatik
-      description: "Schalter, ob die automatisierte Akkusteuerung aktiv ist."
       selector:
         entity:
           domain: input_boolean
     ladestaerke_soll:
       name: Batterieladeleistung Sollwert
-      description: "Sollwert für die maximale Batterieladeleistung (Modus 'Akku schnell Laden')."
       selector:
         entity:
           domain: input_number
     entladestaerke_soll:
       name: Batterieentladeleistung Sollwert
-      description: "Sollwert für die maximale Batterieentladeleistung (Modus 'Akku schnell Entladen')."
       selector:
         entity:
           domain: input_number
     ladestaerke_02c:
       name: 0.2C Ladeleistung
-      description: "Sollwert für die maximale Batterieladeleistung (Modus 'Akku 0.2C laden')."
       selector:
         entity:
           domain: input_number
 
     modbus_hub:
       name: Modbus Hub
-      description: "Name des Modbus Hubs (z. B. sma-sr_wr)."
       default: sma-sr_wr
       selector:
         text: {}
-
     modbus_slave:
       name: Modbus Slave
-      description: "Slave Nummer im Modbus-Netz (z. B. 3)."
       default: 3
       selector:
         number:
           min: 1
           max: 10
-
     register_bms_mode:
       name: Register BMS Betriebsart
-      description: "Registeradresse für die Betriebsart (BMS)."
       default: 40236
       selector:
         number:
@@ -99,7 +89,6 @@ blueprint:
 
     value_bms_mode_normal:
       name: Wert BMS Betriebsart Normal
-      description: "Wert für die Betriebsart (Normal/Voreinstellung) bei Laden oder Pause."
       default: 2424
       selector:
         number:
@@ -107,7 +96,6 @@ blueprint:
           max: 10000
     value_bms_mode_schnell_entladen:
       name: Wert BMS Betriebsart Schnell Entladen
-      description: "Wert für die Betriebsart (schnell Entladen)."
       default: 2290
       selector:
         number:
@@ -115,7 +103,6 @@ blueprint:
           max: 10000
     value_max_entlade_normal:
       name: Wert Maximale Batterieentladeleistung Normal
-      description: "Wert für maximale Batterieentladeleistung im Normal Modus."
       default: 5000
       selector:
         number:
@@ -123,7 +110,6 @@ blueprint:
           max: 10000
     value_max_entlade_schnell:
       name: Wert Maximale Batterieentladeleistung Schnell
-      description: "Wert für maximale Batterieentladeleistung im Schnell-Entlade Modus."
       default: 4600
       selector:
         number:
@@ -131,7 +117,6 @@ blueprint:
           max: 10000
     value_max_lade_schnell:
       name: Wert Maximale Batterieladeleistung Schnell
-      description: "Wert für maximale Batterieladeleistung im Schnell-Lade Modus."
       default: 4600
       selector:
         number:
@@ -140,21 +125,24 @@ blueprint:
 
 trigger:
   - platform: state
-    entity_id:
-      - !input battery_control_select
-      - !input ladestaerke_soll
-      - !input entladestaerke_soll
-      - !input ladestaerke_02c
+    entity_id: !input battery_control_select
     for:
       seconds: 1
   - platform: time_pattern
-    minutes: '/5'
-  - platform: event
-    event_type: start
+    minutes: "/5"
+  - platform: homeassistant
+    event: start
 
 condition: []
+
 action:
   - choose:
-      # Hier folgen die choose-Blöcke für die unterschiedlichen Akkumodi...
-      # (siehe vorheriges Beispiel)
+      - conditions:
+          - condition: template
+            value_template: "false"
+        sequence:
+          - service: system_log.write
+            data:
+              message: "Dies ist ein Dummy-Eintrag, um das Speichern zu ermöglichen."
+              level: warning
 mode: single
