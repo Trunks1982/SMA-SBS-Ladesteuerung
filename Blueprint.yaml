@@ -1,9 +1,8 @@
 blueprint:
-  name: Akkusteuerung via Modbus (konfigurierbar)
+  name: Akkusteuerung via Modbus (konfigurierbar, feste Register)
   description: >
     Dieser Blueprint steuert über Modbus verschiedene Lade- und Entladeprofile
-    der Batterie. Alle wichtigen Parameter (Input‑Entities, Modbus-Hub, Slave, Registeradressen und
-    Sollwerte) können individuell angepasst werden.
+    der Batterie. Registeradressen sind fest definiert.
   domain: automation
   input:
     battery_control_select:
@@ -31,7 +30,6 @@ blueprint:
       selector:
         entity:
           domain: input_number
-
     modbus_hub:
       name: Modbus Hub
       default: sma-sr_wr
@@ -44,48 +42,6 @@ blueprint:
         number:
           min: 1
           max: 10
-    register_bms_mode:
-      name: Register BMS Betriebsart
-      default: 40236
-      selector:
-        number:
-          min: 0
-          max: 65535
-    register_min_lade:
-      name: Register Minimale Batterieladeleistung
-      default: 40793
-      selector:
-        number:
-          min: 0
-          max: 65535
-    register_max_lade:
-      name: Register Maximale Batterieladeleistung
-      default: 40795
-      selector:
-        number:
-          min: 0
-          max: 65535
-    register_min_entlade:
-      name: Register Minimale Batterieentladeleistung
-      default: 40797
-      selector:
-        number:
-          min: 0
-          max: 65535
-    register_max_entlade:
-      name: Register Maximale Batterieentladeleistung
-      default: 40799
-      selector:
-        number:
-          min: 0
-          max: 65535
-    register_netzaustausch:
-      name: Register Sollwert Netzaustauschleistung
-      default: 40801
-      selector:
-        number:
-          min: 0
-          max: 65535
 
     value_bms_mode_normal:
       name: Wert BMS Betriebsart Normal
@@ -138,11 +94,46 @@ condition: []
 action:
   - choose:
       - conditions:
-          - condition: template
-            value_template: "false"
+          - condition: state
+            entity_id: !input battery_control_select
+            state: "Akku schnell Entladen"
+          - condition: state
+            entity_id: !input auto_mode_toggle
+            state: "on"
         sequence:
-          - service: system_log.write
+          - service: modbus.write_register
             data:
-              message: "Dies ist ein Dummy-Eintrag, um das Speichern zu ermöglichen."
-              level: warning
+              hub: !input modbus_hub
+              slave: !input modbus_slave
+              address: 40236
+              value: !input value_bms_mode_schnell_entladen
+
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              slave: !input modbus_slave
+              address: 40793
+              value: 0
+
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              slave: !input modbus_slave
+              address: 40795
+              value: 0
+
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              slave: !input modbus_slave
+              address: 40797
+              value: 0
+
+          - service: modbus.write_register
+            data:
+              hub: !input modbus_hub
+              slave: !input modbus_slave
+              address: 40799
+              value: !input value_max_entlade_schnell
+
 mode: single
