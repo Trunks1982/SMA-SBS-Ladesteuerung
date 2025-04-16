@@ -1,12 +1,11 @@
 blueprint:
-  name: Akkusteuerung via Modbus (konfigurierbar, feste Register)
+  name: Akkusteuerung (feste Register)
   description: >
-    Dieser Blueprint steuert über Modbus verschiedene Lade- und Entladeprofile
-    der Batterie. Registeradressen sind fest definiert.
+    Steuerung des Lade-/Entlademodus via Modbus mit festen Registeradressen.
   domain: automation
   input:
     battery_control_select:
-      name: Akkusteuerung Auswahl
+      name: Akkumodus Auswahl
       selector:
         entity:
           domain: input_select
@@ -25,115 +24,90 @@ blueprint:
       selector:
         entity:
           domain: input_number
-    ladestaerke_02c:
-      name: 0.2C Ladeleistung
-      selector:
-        entity:
-          domain: input_number
-    modbus_hub:
-      name: Modbus Hub
-      default: sma-sr_wr
-      selector:
-        text: {}
-    modbus_slave:
-      name: Modbus Slave
-      default: 3
-      selector:
-        number:
-          min: 1
-          max: 10
-
-    value_bms_mode_normal:
-      name: Wert BMS Betriebsart Normal
-      default: 2424
-      selector:
-        number:
-          min: 0
-          max: 10000
-    value_bms_mode_schnell_entladen:
-      name: Wert BMS Betriebsart Schnell Entladen
-      default: 2290
-      selector:
-        number:
-          min: 0
-          max: 10000
-    value_max_entlade_normal:
-      name: Wert Maximale Batterieentladeleistung Normal
-      default: 5000
-      selector:
-        number:
-          min: 0
-          max: 10000
-    value_max_entlade_schnell:
-      name: Wert Maximale Batterieentladeleistung Schnell
-      default: 4600
-      selector:
-        number:
-          min: 0
-          max: 10000
-    value_max_lade_schnell:
-      name: Wert Maximale Batterieladeleistung Schnell
-      default: 4600
-      selector:
-        number:
-          min: 0
-          max: 10000
 
 trigger:
   - platform: state
-    entity_id: !input battery_control_select
+    entity_id:
+      - !input battery_control_select
+      - !input ladestaerke_soll
+      - !input entladestaerke_soll
     for:
       seconds: 1
   - platform: time_pattern
-    minutes: "/5"
+    minutes: "/3"
   - platform: homeassistant
     event: start
 
 condition: []
 
 action:
-  - choose:
-      - conditions:
-          - condition: state
-            entity_id: !input battery_control_select
-            state: "Akku schnell Entladen"
-          - condition: state
-            entity_id: !input auto_mode_toggle
-            state: "on"
-        sequence:
-          - service: modbus.write_register
-            data:
-              hub: !input modbus_hub
-              slave: !input modbus_slave
-              address: 40236
-              value: !input value_bms_mode_schnell_entladen
+  - alias: Modus Max Entladeleistung
+    if:
+      - condition: state
+        entity_id: !input battery_control_select
+        state: "Max Entlade Leistung (W)"
+      - condition: state
+        entity_id: !input auto_mode_toggle
+        state: "on"
+    then:
+      - alias: BMS Betriebsart auf Schnell Entladen setzen
+        service: modbus.write_register
+        data:
+          hub: sma-sbs
+          address: 40236
+          slave: 3
+          value:
+            - 0
+            - 2290
 
-          - service: modbus.write_register
-            data:
-              hub: !input modbus_hub
-              slave: !input modbus_slave
-              address: 40793
-              value: 0
+      - alias: Minimale Ladeleistung (40793) auf 0
+        service: modbus.write_register
+        data:
+          hub: sma-sbs
+          address: 40793
+          slave: 3
+          value:
+            - 0
+            - 0
 
-          - service: modbus.write_register
-            data:
-              hub: !input modbus_hub
-              slave: !input modbus_slave
-              address: 40795
-              value: 0
+      - alias: Maximale Ladeleistung (40795) setzen
+        service: modbus.write_register
+        data:
+          hub: sma-sbs
+          address: 40795
+          slave: 3
+          value:
+            - 0
+            - "{{ states('input_number.akkusteuerung_ladestaerke_soll') | int }}"
 
-          - service: modbus.write_register
-            data:
-              hub: !input modbus_hub
-              slave: !input modbus_slave
-              address: 40797
-              value: 0
+      - alias: Minimale Entladeleistung (40797) setzen
+        service: modbus.write_register
+        data:
+          hub: sma-sbs
+          address: 40797
+          slave: 3
+          value:
+            - 0
+            - "{{ states('input_number.akkusteuerung_entladestaerke_soll') | int }}"
 
-          - service: modbus.write_register
-            data:
-              hub: !input modbus_hub
-              slave: !input modbus_slave
-              address: 40799
-              value: !input value_max_entlade_schnell
+      - alias: Maximale Entladeleistung (40799) setzen
+        service: modbus.write_register
+        data:
+          hub: sma-sbs
+          address: 40799
+          slave: 3
+          value:
+            - 0
+            - "{{ states('input_number.akkusteuerung_entladestaerke_soll') | int }}"
+
+      - alias: Netzaustauschleistung (40801) auf 0 setzen
+        service: modbus.write_register
+        data:
+          hub: sma-sbs
+          address: 40801
+          slave: 3
+          value:
+            - 0
+            - 0
 
 mode: single
