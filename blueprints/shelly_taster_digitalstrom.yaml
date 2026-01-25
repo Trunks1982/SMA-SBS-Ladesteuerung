@@ -81,6 +81,7 @@ blueprint:
 variables:
   main_light_entity: !input main_light
   secondary_lights_input: !input secondary_lights
+  dim_speed_value: !input dim_speed
   all_lights: >
     {% set main = [main_light_entity] %}
     {% set secondary = secondary_lights_input if secondary_lights_input else [] %}
@@ -157,7 +158,7 @@ action:
                       target:
                         entity_id: "{{ lights_on }}"
                       data:
-                        brightness_step: !input dim_speed
+                        brightness_step: "{{ dim_speed_value }}"
                     - delay:
                         milliseconds: !input dim_delay
             else:
@@ -174,7 +175,7 @@ action:
                       target:
                         entity_id: "{{ lights_on }}"
                       data:
-                        brightness_step: "{{ -(dim_speed | int) }}"
+                        brightness_step: "{{ -dim_speed_value }}"
                     - delay:
                         milliseconds: !input dim_delay
       
