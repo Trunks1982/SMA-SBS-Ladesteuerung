@@ -65,6 +65,18 @@ blueprint:
           max: 500
           step: 50
           unit_of_measurement: "ms"
+    
+    dim_direction_helper:
+      name: Dimm-Richtung Helper
+      description: |
+        Input Boolean Helper für die Dimm-Richtung.
+        WICHTIG: Muss vorher erstellt werden!
+        Einstellungen → Helfer → Schalter erstellen
+        Name frei wählbar, z.B. "Schlafzimmer Dimm-Richtung"
+      selector:
+        entity:
+          filter:
+            - domain: input_boolean
 
 variables:
   main_light_entity: !input main_light
@@ -75,7 +87,7 @@ variables:
     {{ main + secondary }}
   event_type: "{{ trigger.to_state.attributes.event_type }}"
   lights_on: "{{ expand(all_lights) | selectattr('state', 'eq', 'on') | map(attribute='entity_id') | list }}"
-  helper_name: "input_boolean.{{ trigger.entity_id.split('.')[1] }}_dimm_richtung"
+  helper_entity: !input dim_direction_helper
 
 trigger:
   - platform: state
@@ -126,26 +138,16 @@ action:
           - condition: template
             value_template: "{{ lights_on | count > 0 }}"
         sequence:
-          # Erstelle Helper falls nicht vorhanden (wird nur beim ersten Mal ausgeführt)
-          - choose:
-              - conditions:
-                  - condition: template
-                    value_template: "{{ states(helper_name) == 'unknown' }}"
-                sequence:
-                  - service: input_boolean.create
-                    data:
-                      name: "{{ trigger.entity_id.split('.')[1] | title }} Dimm-Richtung"
-                      entity_id: "{{ helper_name.split('.')[1] }}"
-          
           # Dimmen mit Richtungswechsel
           - if:
-              - condition: template
-                value_template: "{{ states(helper_name) == 'off' or states(helper_name) == 'unknown' }}"
+              - condition: state
+                entity_id: !input dim_direction_helper
+                state: "off"
             then:
               # Richtung umschalten und hochdimmen
               - service: input_boolean.turn_on
                 target:
-                  entity_id: "{{ helper_name }}"
+                  entity_id: !input dim_direction_helper
               - repeat:
                   while:
                     - condition: template
@@ -162,7 +164,7 @@ action:
               # Richtung umschalten und runterdimmen
               - service: input_boolean.turn_off
                 target:
-                  entity_id: "{{ helper_name }}"
+                  entity_id: !input dim_direction_helper
               - repeat:
                   while:
                     - condition: template
