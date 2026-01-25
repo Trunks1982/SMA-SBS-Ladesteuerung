@@ -1,12 +1,12 @@
 blueprint:
-  name: Shelly Taster Steuerung (Digitalstrom-Style)
+  name: Shelly Taster Steuerung (Digitalstrom-Style) - Service Version
   description: |
-    Steuert Lichter mit einem Shelly Button wie bei Digitalstrom:
-    - Single Push: Intelligentes An/Aus (wenn was an ist → alles aus, sonst Hauptlampe an)
-    - Double Push: Nebenlampen auf definierte Helligkeit + Hauptlampe aus
+    Steuert Lichter mit einem Shelly Button wie bei Digitalstrom.
+    Du kannst für jeden Push-Typ einen eigenen Service Call definieren.
+    - Single Push: Frei definierbarer Service
+    - Double Push: Frei definierbarer Service
+    - Triple Push: Frei definierbarer Service
     - Long Push: Dimmen (hoch/runter wechselt automatisch)
-    
-    Perfekt für Schlafzimmer, Wohnzimmer, etc.
   domain: automation
   input:
     shelly_button:
@@ -17,63 +17,37 @@ blueprint:
           filter:
             - domain: event
     
-    main_light:
-      name: Hauptlampe
-      description: Die Hauptlampe (für Dimmen und als Referenz)
+    single_push_action:
+      name: Single Push - Aktion
+      description: Was soll bei Single Push passieren? (z.B. light.turn_on, light.turn_off, scene.turn_on)
+      default: []
       selector:
-        entity:
-          filter:
-            - domain: light
+        action: {}
     
-    single_push_lights_on:
-      name: Single Push - Lampen einschalten (optional)
-      description: Welche Lampen sollen bei Single Push eingeschaltet werden?
+    double_push_action:
+      name: Double Push - Aktion
+      description: Was soll bei Double Push passieren?
+      default: []
+      selector:
+        action: {}
+    
+    triple_push_action:
+      name: Triple Push - Aktion
+      description: Was soll bei Triple Push passieren?
+      default: []
+      selector:
+        action: {}
+    
+    # Dimm-Einstellungen
+    dimmable_lights:
+      name: Dimmbare Lampen
+      description: Welche Lampen sollen beim Long Push gedimmt werden?
       default: []
       selector:
         entity:
           filter:
             - domain: light
           multiple: true
-    
-    single_push_lights_off:
-      name: Single Push - Lampen ausschalten (optional)
-      description: Welche Lampen sollen bei Single Push ausgeschaltet werden?
-      default: []
-      selector:
-        entity:
-          filter:
-            - domain: light
-          multiple: true
-    
-    single_push_brightness:
-      name: Single Push - Helligkeit (optional)
-      description: Helligkeit für einzuschaltende Lampen (0 = letzte Helligkeit)
-      default: 0
-      selector:
-        number:
-          min: 0
-          max: 100
-          unit_of_measurement: "%"
-    
-    secondary_lights:
-      name: Nebenlampen (optional)
-      description: Lampen die bei Double Push eingeschaltet werden (z.B. Bettlampen, Stehlampen)
-      default: []
-      selector:
-        entity:
-          filter:
-            - domain: light
-          multiple: true
-    
-    secondary_brightness:
-      name: Double Push - Helligkeit
-      description: Helligkeit der Nebenlampen bei Double Push (0 = letzte Helligkeit)
-      default: 49
-      selector:
-        number:
-          min: 0
-          max: 100
-          unit_of_measurement: "%"
     
     dim_speed:
       name: Dimm-Geschwindigkeit
@@ -102,71 +76,16 @@ blueprint:
         Input Boolean Helper für die Dimm-Richtung.
         WICHTIG: Muss vorher erstellt werden!
         Einstellungen → Helfer → Schalter erstellen
-        Name frei wählbar, z.B. "Schlafzimmer Dimm-Richtung"
       selector:
         entity:
           filter:
             - domain: input_boolean
-    
-    triple_push_lights_on:
-      name: Triple Push - Lampen einschalten (optional)
-      description: Welche Lampen sollen bei Triple Push eingeschaltet werden?
-      default: []
-      selector:
-        entity:
-          filter:
-            - domain: light
-          multiple: true
-    
-    triple_push_lights_off:
-      name: Triple Push - Lampen ausschalten (optional)
-      description: Welche Lampen sollen bei Triple Push ausgeschaltet werden?
-      default: []
-      selector:
-        entity:
-          filter:
-            - domain: light
-          multiple: true
-    
-    triple_push_brightness:
-      name: Triple Push - Helligkeit
-      description: Helligkeit für die einzuschaltenden Lampen (in Prozent)
-      default: 100
-      selector:
-        number:
-          min: 1
-          max: 100
-          unit_of_measurement: "%"
-    
-    triple_push_color_temp:
-      name: Triple Push - Farbtemperatur (optional)
-      description: Farbtemperatur in Kelvin (leer lassen wenn nicht benötigt)
-      default: 0
-      selector:
-        number:
-          min: 0
-          max: 6500
-          step: 100
-          unit_of_measurement: "K"
 
 variables:
-  main_light_entity: !input main_light
-  secondary_lights_input: !input secondary_lights
+  dimmable_lights_list: !input dimmable_lights
   dim_speed_value: !input dim_speed
-  single_lights_on: !input single_push_lights_on
-  single_lights_off: !input single_push_lights_off
-  single_brightness: !input single_push_brightness
-  triple_lights_on: !input triple_push_lights_on
-  triple_lights_off: !input triple_push_lights_off
-  triple_brightness: !input triple_push_brightness
-  triple_color_temp: !input triple_push_color_temp
-  all_lights: >
-    {% set main = [main_light_entity] %}
-    {% set secondary = secondary_lights_input if secondary_lights_input else [] %}
-    {{ main + secondary }}
   event_type: "{{ trigger.to_state.attributes.event_type }}"
-  lights_on: "{{ expand(all_lights) | selectattr('state', 'eq', 'on') | map(attribute='entity_id') | list }}"
-  helper_entity: !input dim_direction_helper
+  lights_on: "{{ expand(dimmable_lights_list) | selectattr('state', 'eq', 'on') | map(attribute='entity_id') | list }}"
 
 trigger:
   - platform: state
@@ -175,135 +94,31 @@ trigger:
 
 action:
   - choose:
-      # Option 1: Single Push - Flexible Lampen-Steuerung
+      # Option 1: Single Push - Service Call
       - conditions:
           - condition: template
             value_template: "{{ event_type == 'single_push' }}"
-        sequence:
-          # Lampen ausschalten (falls angegeben)
-          - choose:
-              - conditions:
-                  - condition: template
-                    value_template: "{{ single_lights_off | length > 0 }}"
-                sequence:
-                  - service: light.turn_off
-                    target:
-                      entity_id: !input single_push_lights_off
-          # Lampen einschalten (falls angegeben)
-          - choose:
-              - conditions:
-                  - condition: template
-                    value_template: "{{ single_lights_on | length > 0 }}"
-                sequence:
-                  - if:
-                      - condition: template
-                        value_template: "{{ single_brightness > 0 }}"
-                    then:
-                      # Mit Helligkeit
-                      - service: light.turn_on
-                        target:
-                          entity_id: !input single_push_lights_on
-                        data:
-                          brightness_pct: !input single_push_brightness
-                    else:
-                      # Ohne Helligkeit (letzte Helligkeit)
-                      - service: light.turn_on
-                        target:
-                          entity_id: !input single_push_lights_on
+        sequence: !input single_push_action
       
-      # Option 2: Double Push - Nebenlampen an, optional Hauptlampe aus
+      # Option 2: Double Push - Service Call
       - conditions:
           - condition: template
             value_template: "{{ event_type == 'double_push' }}"
-          - condition: template
-            value_template: "{{ secondary_lights_input | length > 0 }}"
-        sequence:
-          - if:
-              - condition: template
-                value_template: "{{ secondary_brightness > 0 }}"
-            then:
-              # Mit Helligkeit
-              - service: light.turn_on
-                target:
-                  entity_id: !input secondary_lights
-                data:
-                  brightness_pct: !input secondary_brightness
-            else:
-              # Ohne Helligkeit (letzte Helligkeit)
-              - service: light.turn_on
-                target:
-                  entity_id: !input secondary_lights
-          - service: light.turn_off
-            target:
-              entity_id: !input main_light
+        sequence: !input double_push_action
       
-      # Option 2b: Triple Push - Individuelle Lampen-Steuerung
+      # Option 3: Triple Push - Service Call
       - conditions:
           - condition: template
             value_template: "{{ event_type == 'triple_push' }}"
-          - condition: template
-            value_template: "{{ triple_lights_on | length > 0 or triple_lights_off | length > 0 }}"
-        sequence:
-          # Lampen ausschalten (falls angegeben)
-          - choose:
-              - conditions:
-                  - condition: template
-                    value_template: "{{ triple_lights_off | length > 0 }}"
-                sequence:
-                  - service: light.turn_off
-                    target:
-                      entity_id: !input triple_push_lights_off
-          # Lampen einschalten (falls angegeben)
-          - choose:
-              - conditions:
-                  - condition: template
-                    value_template: "{{ triple_lights_on | length > 0 }}"
-                sequence:
-                  - if:
-                      - condition: template
-                        value_template: "{{ triple_color_temp > 0 }}"
-                    then:
-                      # Mit Farbtemperatur und Helligkeit
-                      - if:
-                          - condition: template
-                            value_template: "{{ triple_brightness > 0 }}"
-                        then:
-                          - service: light.turn_on
-                            target:
-                              entity_id: !input triple_push_lights_on
-                            data:
-                              brightness_pct: !input triple_push_brightness
-                              kelvin: !input triple_push_color_temp
-                        else:
-                          - service: light.turn_on
-                            target:
-                              entity_id: !input triple_push_lights_on
-                            data:
-                              kelvin: !input triple_push_color_temp
-                    else:
-                      # Ohne Farbtemperatur
-                      - if:
-                          - condition: template
-                            value_template: "{{ triple_brightness > 0 }}"
-                        then:
-                          - service: light.turn_on
-                            target:
-                              entity_id: !input triple_push_lights_on
-                            data:
-                              brightness_pct: !input triple_push_brightness
-                        else:
-                          - service: light.turn_on
-                            target:
-                              entity_id: !input triple_push_lights_on
+        sequence: !input triple_push_action
       
-      # Option 3: Long Push - Dimmen
+      # Option 4: Long Push - Dimmen
       - conditions:
           - condition: template
             value_template: "{{ event_type == 'long_push' }}"
           - condition: template
             value_template: "{{ lights_on | count > 0 }}"
         sequence:
-          # Dimmen mit Richtungswechsel
           - if:
               - condition: state
                 entity_id: !input dim_direction_helper
@@ -343,7 +158,7 @@ action:
                     - delay:
                         milliseconds: !input dim_delay
       
-      # Option 4: Button Up - Dimmen stoppen
+      # Option 5: Button Up - Dimmen stoppen
       - conditions:
           - condition: template
             value_template: "{{ event_type == 'btn_up' }}"
