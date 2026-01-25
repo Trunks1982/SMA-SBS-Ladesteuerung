@@ -1,7 +1,7 @@
 blueprint:
-  name: Hue Dimmschalter v2 Steuerung (für standard Shelly Events)
+  name: Hue Dimmschalter V2 Steuerung
   description: |
-    Steuert Lichter mit einem Dimmschalter V2 (für Taster mit standard Events).
+    Steuert Lichter mit einem Hue Dimmschalter V2.
     Du kannst für jeden Event-Typ einen eigenen Service Call definieren.
     - Short Release: Frei definierbarer Service (einfacher Tastendruck)
     - Initial Press + Short Release (schnell 2x): Frei definierbarer Service
@@ -11,7 +11,7 @@ blueprint:
   input:
     shelly_button:
       name: Hue Dimmschalter V2
-      description: Der Hue Dimmschalter V2 Button der die Events sendet
+      description: Der Hue Dimmschalter der die Events sendet
       selector:
         entity:
           filter:
