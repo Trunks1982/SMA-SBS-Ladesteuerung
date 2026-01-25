@@ -11,7 +11,7 @@ blueprint:
   input:
     shelly_button:
       name: Hue Dimmschalter V2
-      description: Der Shelly Button der die Events sendet
+      description: Der Hue Dimmschalter V2 Button der die Events sendet
       selector:
         entity:
           filter:
