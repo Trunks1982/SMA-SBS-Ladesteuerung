@@ -1,0 +1,299 @@
+blueprint:
+  name: Universal Taster Steuerung (Digitalstrom-Style)
+  description: |
+    Steuert Lichter mit verschiedenen Tastern (Shelly, Hue Dimmschalter V2, etc.).
+    Unterstützt verschiedene Event-Typen:
+    - Shelly (single_push, double_push, triple_push, long_push)
+    - Hue/Standard (short_release, long_press mit Mehrfachklick-Erkennung)
+    
+    Funktionen:
+    - Einfacher/Doppelter/Dreifacher Tastendruck: Frei definierbare Services
+    - Langer Tastendruck: Dimmen (hoch/runter wechselt automatisch)
+  domain: automation
+  input:
+    button_device:
+      name: Taster/Schalter
+      description: Der Taster der die Events sendet
+      selector:
+        entity:
+          filter:
+            - domain: event
+    
+    event_mode:
+      name: Event-Modus
+      description: Welchen Event-Typ verwendet dein Taster?
+      default: "shelly"
+      selector:
+        select:
+          options:
+            - label: "Shelly (single_push, double_push, etc.)"
+              value: "shelly"
+            - label: "Hue/Standard (short_release, long_press)"
+              value: "standard"
+    
+    single_push_action:
+      name: Einfacher Tastendruck - Aktion
+      description: Was soll bei einfachem Tastendruck passieren?
+      default: []
+      selector:
+        action: {}
+    
+    double_push_action:
+      name: Doppelter Tastendruck - Aktion
+      description: Was soll bei doppeltem Tastendruck passieren?
+      default: []
+      selector:
+        action: {}
+    
+    triple_push_action:
+      name: Dreifacher Tastendruck - Aktion
+      description: Was soll bei dreifachem Tastendruck passieren?
+      default: []
+      selector:
+        action: {}
+    
+    # Dimm-Einstellungen
+    dimmable_lights:
+      name: Dimmbare Lampen
+      description: Welche Lampen sollen beim langen Tastendruck gedimmt werden?
+      default: []
+      selector:
+        entity:
+          filter:
+            - domain: light
+          multiple: true
+    
+    dim_speed:
+      name: Dimm-Geschwindigkeit
+      description: Geschwindigkeit beim Dimmen (höher = schneller)
+      default: 20
+      selector:
+        number:
+          min: 5
+          max: 50
+          step: 5
+    
+    dim_delay:
+      name: Dimm-Verzögerung
+      description: Verzögerung zwischen Dimm-Schritten in Millisekunden (niedriger = schneller)
+      default: 150
+      selector:
+        number:
+          min: 50
+          max: 500
+          step: 50
+          unit_of_measurement: "ms"
+    
+    dim_direction_helper:
+      name: Dimm-Richtung Helper
+      description: |
+        Input Boolean Helper für die Dimm-Richtung.
+        WICHTIG: Muss vorher erstellt werden!
+        Einstellungen → Helfer → Schalter erstellen
+      selector:
+        entity:
+          filter:
+            - domain: input_boolean
+    
+    multi_click_delay:
+      name: Mehrfachklick-Zeitfenster (nur für Standard-Modus)
+      description: Zeit in Millisekunden für Erkennung von Doppel-/Dreifachklick
+      default: 400
+      selector:
+        number:
+          min: 200
+          max: 800
+          step: 50
+          unit_of_measurement: "ms"
+
+variables:
+  dimmable_lights_list: !input dimmable_lights
+  dim_speed_value: !input dim_speed
+  event_type: "{{ trigger.to_state.attributes.event_type }}"
+  lights_on: "{{ expand(dimmable_lights_list) | selectattr('state', 'eq', 'on') | map(attribute='entity_id') | list }}"
+  mode: !input event_mode
+
+trigger:
+  - platform: state
+    entity_id: !input button_device
+    attribute: event_type
+
+action:
+  - choose:
+      # ========== SHELLY MODUS ==========
+      - conditions:
+          - condition: template
+            value_template: "{{ mode == 'shelly' }}"
+        sequence:
+          - choose:
+              # Single Push
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'single_push' }}"
+                sequence: !input single_push_action
+              
+              # Double Push
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'double_push' }}"
+                sequence: !input double_push_action
+              
+              # Triple Push
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'triple_push' }}"
+                sequence: !input triple_push_action
+              
+              # Long Push - Dimmen
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'long_push' }}"
+                  - condition: template
+                    value_template: "{{ lights_on | count > 0 }}"
+                sequence:
+                  - if:
+                      - condition: state
+                        entity_id: !input dim_direction_helper
+                        state: "off"
+                    then:
+                      # Hochdimmen
+                      - service: input_boolean.turn_on
+                        target:
+                          entity_id: !input dim_direction_helper
+                      - repeat:
+                          while:
+                            - condition: template
+                              value_template: "{{ expand(lights_on) | map(attribute='attributes.brightness') | map('int') | select('lt', 255) | list | count > 0 }}"
+                          sequence:
+                            - service: light.turn_on
+                              target:
+                                entity_id: "{{ lights_on }}"
+                              data:
+                                brightness_step: "{{ dim_speed_value }}"
+                            - delay:
+                                milliseconds: !input dim_delay
+                    else:
+                      # Runterdimmen
+                      - service: input_boolean.turn_off
+                        target:
+                          entity_id: !input dim_direction_helper
+                      - repeat:
+                          while:
+                            - condition: template
+                              value_template: "{{ expand(lights_on) | map(attribute='attributes.brightness') | map('int') | select('gt', 5) | list | count > 0 }}"
+                          sequence:
+                            - service: light.turn_on
+                              target:
+                                entity_id: "{{ lights_on }}"
+                              data:
+                                brightness_step: "{{ -dim_speed_value }}"
+                            - delay:
+                                milliseconds: !input dim_delay
+              
+              # Button Up - Dimmen stoppen
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'btn_up' }}"
+                sequence:
+                  - delay:
+                      milliseconds: 1
+      
+      # ========== STANDARD MODUS (Hue etc.) ==========
+      - conditions:
+          - condition: template
+            value_template: "{{ mode == 'standard' }}"
+        sequence:
+          - choose:
+              # Short Release mit Mehrfachklick-Erkennung
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'short_release' }}"
+                sequence:
+                  - wait_for_trigger:
+                      - platform: state
+                        entity_id: !input button_device
+                        attribute: event_type
+                        to: "short_release"
+                    timeout:
+                      milliseconds: !input multi_click_delay
+                    continue_on_timeout: true
+                  
+                  - choose:
+                      # Zweiter Klick erkannt
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ wait.trigger is not none }}"
+                        sequence:
+                          - wait_for_trigger:
+                              - platform: state
+                                entity_id: !input button_device
+                                attribute: event_type
+                                to: "short_release"
+                            timeout:
+                              milliseconds: !input multi_click_delay
+                            continue_on_timeout: true
+                          
+                          - choose:
+                              # Dritter Klick erkannt
+                              - conditions:
+                                  - condition: template
+                                    value_template: "{{ wait.trigger is not none }}"
+                                sequence: !input triple_push_action
+                            default: !input double_push_action
+                    default: !input single_push_action
+              
+              # Long Press - Dimmen
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'long_press' }}"
+                  - condition: template
+                    value_template: "{{ lights_on | count > 0 }}"
+                sequence:
+                  - if:
+                      - condition: state
+                        entity_id: !input dim_direction_helper
+                        state: "off"
+                    then:
+                      # Hochdimmen
+                      - service: input_boolean.turn_on
+                        target:
+                          entity_id: !input dim_direction_helper
+                      - repeat:
+                          while:
+                            - condition: template
+                              value_template: "{{ expand(lights_on) | map(attribute='attributes.brightness') | map('int') | select('lt', 255) | list | count > 0 }}"
+                          sequence:
+                            - service: light.turn_on
+                              target:
+                                entity_id: "{{ lights_on }}"
+                              data:
+                                brightness_step: "{{ dim_speed_value }}"
+                            - delay:
+                                milliseconds: !input dim_delay
+                    else:
+                      # Runterdimmen
+                      - service: input_boolean.turn_off
+                        target:
+                          entity_id: !input dim_direction_helper
+                      - repeat:
+                          while:
+                            - condition: template
+                              value_template: "{{ expand(lights_on) | map(attribute='attributes.brightness') | map('int') | select('gt', 5) | list | count > 0 }}"
+                          sequence:
+                            - service: light.turn_on
+                              target:
+                                entity_id: "{{ lights_on }}"
+                              data:
+                                brightness_step: "{{ -dim_speed_value }}"
+                            - delay:
+                                milliseconds: !input dim_delay
+              
+              # Long Release - Dimmen stoppen
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'long_release' }}"
+                sequence:
+                  - delay:
+                      milliseconds: 1
+
+mode: restart
