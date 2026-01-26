@@ -9,6 +9,18 @@ blueprint:
     - Long Push: Dimmen (hoch/runter wechselt automatisch)
   domain: automation
   input:
+    button_type:
+      name: Taster-Typ
+      description: Welchen Taster-Typ verwendest du?
+      default: shelly
+      selector:
+        select:
+          options:
+            - label: Shelly Button
+              value: shelly
+            - label: Hue Dimmschalter V2
+              value: hue
+    
     shelly_button:
       name: Shelly Taster
       description: Der Shelly Button der die Events sendet
@@ -82,6 +94,7 @@ blueprint:
             - domain: input_boolean
 
 variables:
+  button_type_selected: !input button_type
   dimmable_lights_list: !input dimmable_lights
   dim_speed_value: !input dim_speed
   event_type: "{{ trigger.to_state.attributes.event_type }}"
