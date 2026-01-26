@@ -143,10 +143,10 @@ action:
             # Einzelklick
             default: !input single_click_action
       
-      # Option 2: Initial Press / Repeat / Long Press - Dimmen
+      # Option 2: Repeat - Dimmen (solange Taste gedrückt)
       - conditions:
           - condition: template
-            value_template: "{{ event_type in ['initial_press', 'repeat', 'long_press'] }}"
+            value_template: "{{ event_type == 'repeat' }}"
           - condition: template
             value_template: "{{ lights_on | count > 0 }}"
         sequence:
