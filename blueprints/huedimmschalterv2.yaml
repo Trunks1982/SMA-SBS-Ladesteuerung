@@ -1,47 +1,46 @@
 blueprint:
-  name: Shelly Taster Steuerung (Digitalstrom-Style) - Service Version
+  name: Hue Dimmschalter V2 Steuerung (Test)
   description: |
-    Steuert Lichter mit einem Shelly Button wie bei Digitalstrom.
-    Du kannst für jeden Push-Typ einen eigenen Service Call definieren.
-    - Single Push: Frei definierbarer Service
-    - Double Push: Frei definierbarer Service
-    - Triple Push: Frei definierbarer Service
-    - Long Push: Dimmen (hoch/runter wechselt automatisch)
+    Steuert Lichter mit einem Hue Dimmschalter V2.
+    
+    Events:
+    - Short Release: Einzelklick / Doppelklick / Dreifachklick
+    - Initial Press / Repeat / Long Press: Dimmen (hoch/runter wechselt)
+    - Long Release: Dimmen stoppen
   domain: automation
   input:
-    shelly_button:
-      name: Shelly Taster
-      description: Der Shelly Button der die Events sendet
+    hue_button:
+      name: Hue Dimmschalter V2
+      description: Der Hue Dimmschalter der die Events sendet
       selector:
         entity:
           filter:
             - domain: event
     
-    single_push_action:
-      name: Single Push - Aktion
-      description: Was soll bei Single Push passieren? (z.B. light.turn_on, light.turn_off, scene.turn_on)
+    single_click_action:
+      name: Einzelklick - Aktion
+      description: Was soll bei einem Klick passieren?
       default: []
       selector:
         action: {}
     
-    double_push_action:
-      name: Double Push - Aktion
-      description: Was soll bei Double Push passieren?
+    double_click_action:
+      name: Doppelklick - Aktion
+      description: Was soll bei Doppelklick passieren?
       default: []
       selector:
         action: {}
     
-    triple_push_action:
-      name: Triple Push - Aktion
-      description: Was soll bei Triple Push passieren?
+    triple_click_action:
+      name: Dreifachklick - Aktion
+      description: Was soll bei Dreifachklick passieren?
       default: []
       selector:
         action: {}
     
-    # Dimm-Einstellungen
     dimmable_lights:
       name: Dimmbare Lampen
-      description: Welche Lampen sollen beim Long Push gedimmt werden?
+      description: Welche Lampen sollen gedimmt werden?
       default: []
       selector:
         entity:
@@ -61,7 +60,7 @@ blueprint:
     
     dim_delay:
       name: Dimm-Verzögerung
-      description: Verzögerung zwischen Dimm-Schritten in Millisekunden (niedriger = schneller)
+      description: Verzögerung zwischen Dimm-Schritten in Millisekunden
       default: 150
       selector:
         number:
@@ -72,14 +71,22 @@ blueprint:
     
     dim_direction_helper:
       name: Dimm-Richtung Helper
-      description: |
-        Input Boolean Helper für die Dimm-Richtung.
-        WICHTIG: Muss vorher erstellt werden!
-        Einstellungen → Helfer → Schalter erstellen
+      description: Input Boolean Helper (muss vorher erstellt werden)
       selector:
         entity:
           filter:
             - domain: input_boolean
+    
+    multi_click_delay:
+      name: Mehrfachklick-Zeitfenster
+      description: Zeit in Millisekunden für Erkennung von Mehrfachklicks
+      default: 400
+      selector:
+        number:
+          min: 200
+          max: 800
+          step: 50
+          unit_of_measurement: "ms"
 
 variables:
   dimmable_lights_list: !input dimmable_lights
@@ -89,33 +96,57 @@ variables:
 
 trigger:
   - platform: state
-    entity_id: !input shelly_button
+    entity_id: !input hue_button
     attribute: event_type
 
 action:
   - choose:
-      # Option 1: Single Push - Service Call
+      # Option 1: Short Release - Mehrfachklick-Erkennung
       - conditions:
           - condition: template
-            value_template: "{{ event_type == 'single_push' }}"
-        sequence: !input single_push_action
+            value_template: "{{ event_type == 'short_release' }}"
+        sequence:
+          # Warte auf zweiten Klick
+          - wait_for_trigger:
+              - platform: state
+                entity_id: !input hue_button
+                attribute: event_type
+                to: "short_release"
+            timeout:
+              milliseconds: !input multi_click_delay
+            continue_on_timeout: true
+          
+          - choose:
+              # Zweiter Klick erkannt
+              - conditions:
+                  - condition: template
+                    value_template: "{{ wait.trigger is not none }}"
+                sequence:
+                  # Warte auf dritten Klick
+                  - wait_for_trigger:
+                      - platform: state
+                        entity_id: !input hue_button
+                        attribute: event_type
+                        to: "short_release"
+                    timeout:
+                      milliseconds: !input multi_click_delay
+                    continue_on_timeout: true
+                  
+                  - choose:
+                      # Dreifachklick
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ wait.trigger is not none }}"
+                        sequence: !input triple_click_action
+                    # Doppelklick
+                    default: !input double_click_action
+            # Einzelklick
+            default: !input single_click_action
       
-      # Option 2: Double Push - Service Call
+      # Option 2: Initial Press / Repeat / Long Press - Dimmen
       - conditions:
           - condition: template
-            value_template: "{{ event_type == 'double_push' }}"
-        sequence: !input double_push_action
-      
-      # Option 3: Triple Push - Service Call
-      - conditions:
-          - condition: template
-            value_template: "{{ event_type == 'triple_push' }}"
-        sequence: !input triple_push_action
-      
-      # Option 4: Long Push - Dimmen
-      - conditions:
-          - condition: template
-            value_template: "{{ event_type == 'long_push' }}"
+            value_template: "{{ event_type in ['initial_press', 'repeat', 'long_press'] }}"
           - condition: template
             value_template: "{{ lights_on | count > 0 }}"
         sequence:
@@ -158,10 +189,10 @@ action:
                     - delay:
                         milliseconds: !input dim_delay
       
-      # Option 5: Button Up - Dimmen stoppen
+      # Option 3: Long Release - Dimmen stoppen
       - conditions:
           - condition: template
-            value_template: "{{ event_type == 'btn_up' }}"
+            value_template: "{{ event_type == 'long_release' }}"
         sequence:
           - delay:
               milliseconds: 1
