@@ -188,13 +188,5 @@ action:
                         brightness_step: "{{ -dim_speed_value }}"
                     - delay:
                         milliseconds: !input dim_delay
-      
-      # Option 3: Long Release - Dimmen stoppen
-      - conditions:
-          - condition: template
-            value_template: "{{ event_type == 'long_release' }}"
-        sequence:
-          - delay:
-              milliseconds: 1
 
 mode: restart
