@@ -1,0 +1,672 @@
+blueprint:
+  name: Universal Taster (Shelly & Hue 4-Tasten)
+  description: |
+    Universal-Blueprint für Shelly Button und Hue Dimmschalter V2.
+    
+    SHELLY: Ein Taster mit Single/Double/Triple + Dimmen
+    HUE: Vier Tasten mit je Single/Double/Triple + Dimmen pro Taste
+    
+    Wähle deinen Taster-Typ aus!
+  domain: automation
+  
+  input:
+    button_type:
+      name: Taster-Typ
+      description: Welchen Taster verwendest du?
+      default: shelly
+      selector:
+        select:
+          options:
+            - label: Shelly Button
+              value: shelly
+            - label: Hue Dimmschalter V2 (4 Tasten)
+              value: hue
+    
+    # === SHELLY / HUE TASTE 1 ===
+    button_main:
+      name: Taster / Taste 1
+      description: |
+        Shelly: Dein Shelly Button Event
+        Hue: Taste 1 Event (ON Taste oben)
+      selector:
+        entity:
+          filter:
+            - domain: event
+    
+    # === HUE TASTEN 2-4 (nur für Hue) ===
+    button_2:
+      name: "[Hue] Taste 2"
+      description: Hue Taste 2 Event (Heller)
+      default: ""
+      selector:
+        entity:
+          filter:
+            - domain: event
+    
+    button_3:
+      name: "[Hue] Taste 3"
+      description: Hue Taste 3 Event (Dunkler)
+      default: ""
+      selector:
+        entity:
+          filter:
+            - domain: event
+    
+    button_4:
+      name: "[Hue] Taste 4"
+      description: Hue Taste 4 Event (OFF Taste unten)
+      default: ""
+      selector:
+        entity:
+          filter:
+            - domain: event
+    
+    # === AKTIONEN TASTE 1 ===
+    btn1_single:
+      name: "Taste 1: Einzelklick"
+      default: []
+      selector:
+        action: {}
+    
+    btn1_double:
+      name: "Taste 1: Doppelklick"
+      default: []
+      selector:
+        action: {}
+    
+    btn1_triple:
+      name: "Taste 1: Dreifachklick"
+      default: []
+      selector:
+        action: {}
+    
+    btn1_dim_lights:
+      name: "Taste 1: Dimmbare Lampen"
+      default: []
+      selector:
+        entity:
+          domain: light
+          multiple: true
+    
+    # === AKTIONEN TASTE 2 (Hue) ===
+    btn2_single:
+      name: "[Hue] Taste 2: Einzelklick"
+      default: []
+      selector:
+        action: {}
+    
+    btn2_double:
+      name: "[Hue] Taste 2: Doppelklick"
+      default: []
+      selector:
+        action: {}
+    
+    btn2_triple:
+      name: "[Hue] Taste 2: Dreifachklick"
+      default: []
+      selector:
+        action: {}
+    
+    btn2_dim_lights:
+      name: "[Hue] Taste 2: Dimmbare Lampen"
+      default: []
+      selector:
+        entity:
+          domain: light
+          multiple: true
+    
+    # === AKTIONEN TASTE 3 (Hue) ===
+    btn3_single:
+      name: "[Hue] Taste 3: Einzelklick"
+      default: []
+      selector:
+        action: {}
+    
+    btn3_double:
+      name: "[Hue] Taste 3: Doppelklick"
+      default: []
+      selector:
+        action: {}
+    
+    btn3_triple:
+      name: "[Hue] Taste 3: Dreifachklick"
+      default: []
+      selector:
+        action: {}
+    
+    btn3_dim_lights:
+      name: "[Hue] Taste 3: Dimmbare Lampen"
+      default: []
+      selector:
+        entity:
+          domain: light
+          multiple: true
+    
+    # === AKTIONEN TASTE 4 (Hue) ===
+    btn4_single:
+      name: "[Hue] Taste 4: Einzelklick"
+      default: []
+      selector:
+        action: {}
+    
+    btn4_double:
+      name: "[Hue] Taste 4: Doppelklick"
+      default: []
+      selector:
+        action: {}
+    
+    btn4_triple:
+      name: "[Hue] Taste 4: Dreifachklick"
+      default: []
+      selector:
+        action: {}
+    
+    btn4_dim_lights:
+      name: "[Hue] Taste 4: Dimmbare Lampen"
+      default: []
+      selector:
+        entity:
+          domain: light
+          multiple: true
+    
+    # === DIMM-EINSTELLUNGEN ===
+    dim_speed:
+      name: Dimm-Geschwindigkeit
+      default: 20
+      selector:
+        number:
+          min: 5
+          max: 50
+          step: 5
+    
+    dim_delay:
+      name: Dimm-Verzögerung (ms)
+      default: 150
+      selector:
+        number:
+          min: 50
+          max: 500
+          step: 50
+    
+    dim_helper_1:
+      name: Dimm-Richtung Helper (Taste 1)
+      selector:
+        entity:
+          domain: input_boolean
+    
+    dim_helper_2:
+      name: "[Hue] Dimm-Richtung Helper (Taste 2)"
+      default: ""
+      selector:
+        entity:
+          domain: input_boolean
+    
+    dim_helper_3:
+      name: "[Hue] Dimm-Richtung Helper (Taste 3)"
+      default: ""
+      selector:
+        entity:
+          domain: input_boolean
+    
+    dim_helper_4:
+      name: "[Hue] Dimm-Richtung Helper (Taste 4)"
+      default: ""
+      selector:
+        entity:
+          domain: input_boolean
+    
+    multi_click_delay:
+      name: "[Hue] Mehrfachklick-Zeitfenster (ms)"
+      default: 400
+      selector:
+        number:
+          min: 200
+          max: 800
+          step: 50
+
+variables:
+  button_type_sel: !input button_type
+  dim_speed_val: !input dim_speed
+  event_type: "{{ trigger.to_state.attributes.event_type }}"
+  
+  btn1_lights: !input btn1_dim_lights
+  btn1_on: "{{ expand(btn1_lights) | selectattr('state', 'eq', 'on') | map(attribute='entity_id') | list }}"
+  
+  btn2_lights: !input btn2_dim_lights
+  btn2_on: "{{ expand(btn2_lights) | selectattr('state', 'eq', 'on') | map(attribute='entity_id') | list }}"
+  
+  btn3_lights: !input btn3_dim_lights
+  btn3_on: "{{ expand(btn3_lights) | selectattr('state', 'eq', 'on') | map(attribute='entity_id') | list }}"
+  
+  btn4_lights: !input btn4_dim_lights
+  btn4_on: "{{ expand(btn4_lights) | selectattr('state', 'eq', 'on') | map(attribute='entity_id') | list }}"
+
+trigger:
+  - platform: state
+    entity_id: !input button_main
+    attribute: event_type
+    id: btn1
+  - platform: state
+    entity_id: !input button_2
+    attribute: event_type
+    id: btn2
+  - platform: state
+    entity_id: !input button_3
+    attribute: event_type
+    id: btn3
+  - platform: state
+    entity_id: !input button_4
+    attribute: event_type
+    id: btn4
+
+action:
+  - choose:
+      # ========== SHELLY MODUS ==========
+      - conditions:
+          - condition: template
+            value_template: "{{ button_type_sel == 'shelly' }}"
+          - condition: trigger
+            id: btn1
+        sequence:
+          - choose:
+              # Single Push
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'single_push' }}"
+                sequence: !input btn1_single
+              
+              # Double Push
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'double_push' }}"
+                sequence: !input btn1_double
+              
+              # Triple Push
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'triple_push' }}"
+                sequence: !input btn1_triple
+              
+              # Long Push - Dimmen
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'long_push' }}"
+                  - condition: template
+                    value_template: "{{ btn1_on | count > 0 }}"
+                sequence:
+                  - if:
+                      - condition: state
+                        entity_id: !input dim_helper_1
+                        state: "off"
+                    then:
+                      - service: input_boolean.turn_on
+                        target:
+                          entity_id: !input dim_helper_1
+                      - repeat:
+                          while:
+                            - condition: template
+                              value_template: "{{ expand(btn1_on) | map(attribute='attributes.brightness') | map('int') | select('lt', 255) | list | count > 0 }}"
+                          sequence:
+                            - service: light.turn_on
+                              target:
+                                entity_id: "{{ btn1_on }}"
+                              data:
+                                brightness_step: "{{ dim_speed_val }}"
+                            - delay:
+                                milliseconds: !input dim_delay
+                    else:
+                      - service: input_boolean.turn_off
+                        target:
+                          entity_id: !input dim_helper_1
+                      - repeat:
+                          while:
+                            - condition: template
+                              value_template: "{{ expand(btn1_on) | map(attribute='attributes.brightness') | map('int') | select('gt', 5) | list | count > 0 }}"
+                          sequence:
+                            - service: light.turn_on
+                              target:
+                                entity_id: "{{ btn1_on }}"
+                              data:
+                                brightness_step: "{{ -dim_speed_val }}"
+                            - delay:
+                                milliseconds: !input dim_delay
+      
+      # ========== HUE TASTE 1 ==========
+      - conditions:
+          - condition: template
+            value_template: "{{ button_type_sel == 'hue' }}"
+          - condition: trigger
+            id: btn1
+        sequence:
+          - choose:
+              # Short Release - Klick-Erkennung
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'short_release' }}"
+                sequence:
+                  - wait_for_trigger:
+                      - platform: state
+                        entity_id: !input button_main
+                        attribute: event_type
+                        to: "short_release"
+                    timeout:
+                      milliseconds: !input multi_click_delay
+                    continue_on_timeout: true
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ wait.trigger is not none }}"
+                        sequence:
+                          - wait_for_trigger:
+                              - platform: state
+                                entity_id: !input button_main
+                                attribute: event_type
+                                to: "short_release"
+                            timeout:
+                              milliseconds: !input multi_click_delay
+                            continue_on_timeout: true
+                          - choose:
+                              - conditions:
+                                  - condition: template
+                                    value_template: "{{ wait.trigger is not none }}"
+                                sequence: !input btn1_triple
+                            default: !input btn1_double
+                    default: !input btn1_single
+              
+              # Repeat - Dimmen
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'repeat' }}"
+                  - condition: template
+                    value_template: "{{ btn1_on | count > 0 }}"
+                sequence:
+                  - if:
+                      - condition: state
+                        entity_id: !input dim_helper_1
+                        state: "off"
+                    then:
+                      - service: input_boolean.turn_on
+                        target:
+                          entity_id: !input dim_helper_1
+                      - repeat:
+                          while:
+                            - condition: template
+                              value_template: "{{ expand(btn1_on) | map(attribute='attributes.brightness') | map('int') | select('lt', 255) | list | count > 0 }}"
+                          sequence:
+                            - service: light.turn_on
+                              target:
+                                entity_id: "{{ btn1_on }}"
+                              data:
+                                brightness_step: "{{ dim_speed_val }}"
+                            - delay:
+                                milliseconds: !input dim_delay
+                    else:
+                      - service: input_boolean.turn_off
+                        target:
+                          entity_id: !input dim_helper_1
+                      - repeat:
+                          while:
+                            - condition: template
+                              value_template: "{{ expand(btn1_on) | map(attribute='attributes.brightness') | map('int') | select('gt', 5) | list | count > 0 }}"
+                          sequence:
+                            - service: light.turn_on
+                              target:
+                                entity_id: "{{ btn1_on }}"
+                              data:
+                                brightness_step: "{{ -dim_speed_val }}"
+                            - delay:
+                                milliseconds: !input dim_delay
+      
+      # ========== HUE TASTE 2 ==========
+      - conditions:
+          - condition: template
+            value_template: "{{ button_type_sel == 'hue' }}"
+          - condition: trigger
+            id: btn2
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'short_release' }}"
+                sequence:
+                  - wait_for_trigger:
+                      - platform: state
+                        entity_id: !input button_2
+                        attribute: event_type
+                        to: "short_release"
+                    timeout:
+                      milliseconds: !input multi_click_delay
+                    continue_on_timeout: true
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ wait.trigger is not none }}"
+                        sequence:
+                          - wait_for_trigger:
+                              - platform: state
+                                entity_id: !input button_2
+                                attribute: event_type
+                                to: "short_release"
+                            timeout:
+                              milliseconds: !input multi_click_delay
+                            continue_on_timeout: true
+                          - choose:
+                              - conditions:
+                                  - condition: template
+                                    value_template: "{{ wait.trigger is not none }}"
+                                sequence: !input btn2_triple
+                            default: !input btn2_double
+                    default: !input btn2_single
+              
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'repeat' }}"
+                  - condition: template
+                    value_template: "{{ btn2_on | count > 0 }}"
+                sequence:
+                  - if:
+                      - condition: state
+                        entity_id: !input dim_helper_2
+                        state: "off"
+                    then:
+                      - service: input_boolean.turn_on
+                        target:
+                          entity_id: !input dim_helper_2
+                      - repeat:
+                          while:
+                            - condition: template
+                              value_template: "{{ expand(btn2_on) | map(attribute='attributes.brightness') | map('int') | select('lt', 255) | list | count > 0 }}"
+                          sequence:
+                            - service: light.turn_on
+                              target:
+                                entity_id: "{{ btn2_on }}"
+                              data:
+                                brightness_step: "{{ dim_speed_val }}"
+                            - delay:
+                                milliseconds: !input dim_delay
+                    else:
+                      - service: input_boolean.turn_off
+                        target:
+                          entity_id: !input dim_helper_2
+                      - repeat:
+                          while:
+                            - condition: template
+                              value_template: "{{ expand(btn2_on) | map(attribute='attributes.brightness') | map('int') | select('gt', 5) | list | count > 0 }}"
+                          sequence:
+                            - service: light.turn_on
+                              target:
+                                entity_id: "{{ btn2_on }}"
+                              data:
+                                brightness_step: "{{ -dim_speed_val }}"
+                            - delay:
+                                milliseconds: !input dim_delay
+      
+      # ========== HUE TASTE 3 ==========
+      - conditions:
+          - condition: template
+            value_template: "{{ button_type_sel == 'hue' }}"
+          - condition: trigger
+            id: btn3
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'short_release' }}"
+                sequence:
+                  - wait_for_trigger:
+                      - platform: state
+                        entity_id: !input button_3
+                        attribute: event_type
+                        to: "short_release"
+                    timeout:
+                      milliseconds: !input multi_click_delay
+                    continue_on_timeout: true
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ wait.trigger is not none }}"
+                        sequence:
+                          - wait_for_trigger:
+                              - platform: state
+                                entity_id: !input button_3
+                                attribute: event_type
+                                to: "short_release"
+                            timeout:
+                              milliseconds: !input multi_click_delay
+                            continue_on_timeout: true
+                          - choose:
+                              - conditions:
+                                  - condition: template
+                                    value_template: "{{ wait.trigger is not none }}"
+                                sequence: !input btn3_triple
+                            default: !input btn3_double
+                    default: !input btn3_single
+              
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'repeat' }}"
+                  - condition: template
+                    value_template: "{{ btn3_on | count > 0 }}"
+                sequence:
+                  - if:
+                      - condition: state
+                        entity_id: !input dim_helper_3
+                        state: "off"
+                    then:
+                      - service: input_boolean.turn_on
+                        target:
+                          entity_id: !input dim_helper_3
+                      - repeat:
+                          while:
+                            - condition: template
+                              value_template: "{{ expand(btn3_on) | map(attribute='attributes.brightness') | map('int') | select('lt', 255) | list | count > 0 }}"
+                          sequence:
+                            - service: light.turn_on
+                              target:
+                                entity_id: "{{ btn3_on }}"
+                              data:
+                                brightness_step: "{{ dim_speed_val }}"
+                            - delay:
+                                milliseconds: !input dim_delay
+                    else:
+                      - service: input_boolean.turn_off
+                        target:
+                          entity_id: !input dim_helper_3
+                      - repeat:
+                          while:
+                            - condition: template
+                              value_template: "{{ expand(btn3_on) | map(attribute='attributes.brightness') | map('int') | select('gt', 5) | list | count > 0 }}"
+                          sequence:
+                            - service: light.turn_on
+                              target:
+                                entity_id: "{{ btn3_on }}"
+                              data:
+                                brightness_step: "{{ -dim_speed_val }}"
+                            - delay:
+                                milliseconds: !input dim_delay
+      
+      # ========== HUE TASTE 4 ==========
+      - conditions:
+          - condition: template
+            value_template: "{{ button_type_sel == 'hue' }}"
+          - condition: trigger
+            id: btn4
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'short_release' }}"
+                sequence:
+                  - wait_for_trigger:
+                      - platform: state
+                        entity_id: !input button_4
+                        attribute: event_type
+                        to: "short_release"
+                    timeout:
+                      milliseconds: !input multi_click_delay
+                    continue_on_timeout: true
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ wait.trigger is not none }}"
+                        sequence:
+                          - wait_for_trigger:
+                              - platform: state
+                                entity_id: !input button_4
+                                attribute: event_type
+                                to: "short_release"
+                            timeout:
+                              milliseconds: !input multi_click_delay
+                            continue_on_timeout: true
+                          - choose:
+                              - conditions:
+                                  - condition: template
+                                    value_template: "{{ wait.trigger is not none }}"
+                                sequence: !input btn4_triple
+                            default: !input btn4_double
+                    default: !input btn4_single
+              
+              - conditions:
+                  - condition: template
+                    value_template: "{{ event_type == 'repeat' }}"
+                  - condition: template
+                    value_template: "{{ btn4_on | count > 0 }}"
+                sequence:
+                  - if:
+                      - condition: state
+                        entity_id: !input dim_helper_4
+                        state: "off"
+                    then:
+                      - service: input_boolean.turn_on
+                        target:
+                          entity_id: !input dim_helper_4
+                      - repeat:
+                          while:
+                            - condition: template
+                              value_template: "{{ expand(btn4_on) | map(attribute='attributes.brightness') | map('int') | select('lt', 255) | list | count > 0 }}"
+                          sequence:
+                            - service: light.turn_on
+                              target:
+                                entity_id: "{{ btn4_on }}"
+                              data:
+                                brightness_step: "{{ dim_speed_val }}"
+                            - delay:
+                                milliseconds: !input dim_delay
+                    else:
+                      - service: input_boolean.turn_off
+                        target:
+                          entity_id: !input dim_helper_4
+                      - repeat:
+                          while:
+                            - condition: template
+                              value_template: "{{ expand(btn4_on) | map(attribute='attributes.brightness') | map('int') | select('gt', 5) | list | count > 0 }}"
+                          sequence:
+                            - service: light.turn_on
+                              target:
+                                entity_id: "{{ btn4_on }}"
+                              data:
+                                brightness_step: "{{ -dim_speed_val }}"
+                            - delay:
+                                milliseconds: !input dim_delay
+
+mode: restart
