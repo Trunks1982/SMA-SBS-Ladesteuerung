@@ -1,0 +1,160 @@
+blueprint:
+  name: Shelly Button Steuerung
+  description: |
+    Steuert Lichter mit einem Shelly Button.
+    - Single Push: Frei definierbarer Service
+    - Double Push: Frei definierbarer Service
+    - Triple Push: Frei definierbarer Service
+    - Long Push: Dimmen (hoch/runter wechselt automatisch)
+    
+    Perfekt für alle Räume mit Shelly Buttons!
+  domain: automation
+  
+  input:
+    shelly_button:
+      name: Shelly Button
+      description: Event Entity des Shelly Buttons
+      selector:
+        entity:
+          filter:
+            - domain: event
+    
+    single_push_action:
+      name: Single Push - Aktion
+      description: Was soll bei Single Push passieren?
+      default: []
+      selector:
+        action: {}
+    
+    double_push_action:
+      name: Double Push - Aktion
+      description: Was soll bei Double Push passieren?
+      default: []
+      selector:
+        action: {}
+    
+    triple_push_action:
+      name: Triple Push - Aktion
+      description: Was soll bei Triple Push passieren?
+      default: []
+      selector:
+        action: {}
+    
+    dimmable_lights:
+      name: Dimmbare Lampen
+      description: Welche Lampen sollen beim Long Push gedimmt werden?
+      default: []
+      selector:
+        entity:
+          filter:
+            - domain: light
+          multiple: true
+    
+    dim_speed:
+      name: Dimm-Geschwindigkeit
+      description: Geschwindigkeit beim Dimmen (höher = schneller)
+      default: 20
+      selector:
+        number:
+          min: 5
+          max: 50
+          step: 5
+    
+    dim_delay:
+      name: Dimm-Verzögerung
+      description: Verzögerung zwischen Dimm-Schritten in Millisekunden
+      default: 150
+      selector:
+        number:
+          min: 50
+          max: 500
+          step: 50
+          unit_of_measurement: "ms"
+    
+    dim_direction_helper:
+      name: Dimm-Richtung Helper
+      description: |
+        Input Boolean Helper für die Dimm-Richtung.
+        WICHTIG: Muss vorher erstellt werden!
+        Einstellungen → Helfer → Schalter erstellen
+      selector:
+        entity:
+          filter:
+            - domain: input_boolean
+
+variables:
+  dimmable_lights_list: !input dimmable_lights
+  dim_speed_value: !input dim_speed
+  event_type: "{{ trigger.to_state.attributes.event_type }}"
+  lights_on: "{{ expand(dimmable_lights_list) | selectattr('state', 'eq', 'on') | map(attribute='entity_id') | list }}"
+
+trigger:
+  - platform: state
+    entity_id: !input shelly_button
+    attribute: event_type
+
+action:
+  - choose:
+      # Single Push
+      - conditions:
+          - condition: template
+            value_template: "{{ event_type == 'single_push' }}"
+        sequence: !input single_push_action
+      
+      # Double Push
+      - conditions:
+          - condition: template
+            value_template: "{{ event_type == 'double_push' }}"
+        sequence: !input double_push_action
+      
+      # Triple Push
+      - conditions:
+          - condition: template
+            value_template: "{{ event_type == 'triple_push' }}"
+        sequence: !input triple_push_action
+      
+      # Long Push - Dimmen
+      - conditions:
+          - condition: template
+            value_template: "{{ event_type == 'long_push' }}"
+          - condition: template
+            value_template: "{{ lights_on | count > 0 }}"
+        sequence:
+          - if:
+              - condition: state
+                entity_id: !input dim_direction_helper
+                state: "off"
+            then:
+              - service: input_boolean.turn_on
+                target:
+                  entity_id: !input dim_direction_helper
+              - repeat:
+                  while:
+                    - condition: template
+                      value_template: "{{ expand(lights_on) | map(attribute='attributes.brightness') | map('int') | select('lt', 255) | list | count > 0 }}"
+                  sequence:
+                    - service: light.turn_on
+                      target:
+                        entity_id: "{{ lights_on }}"
+                      data:
+                        brightness_step: "{{ dim_speed_value }}"
+                    - delay:
+                        milliseconds: !input dim_delay
+            else:
+              - service: input_boolean.turn_off
+                target:
+                  entity_id: !input dim_direction_helper
+              - repeat:
+                  while:
+                    - condition: template
+                      value_template: "{{ expand(lights_on) | map(attribute='attributes.brightness') | map('int') | select('gt', 5) | list | count > 0 }}"
+                  sequence:
+                    - service: light.turn_on
+                      target:
+                        entity_id: "{{ lights_on }}"
+                      data:
+                        brightness_step: "{{ -dim_speed_value }}"
+                    - delay:
+                        milliseconds: !input dim_delay
+
+mode: restart
