@@ -92,6 +92,9 @@ trigger:
   - platform: state
     entity_id: !input shelly_button
     attribute: event_type
+    not_from:        # ← NEU
+      - unavailable  # ← NEU
+      - unknown      # ← NEU
 
 action:
   - choose:
