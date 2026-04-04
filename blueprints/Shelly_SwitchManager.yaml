@@ -107,7 +107,7 @@ trigger:
 
 action:
   - condition: template
-    value_template: "{{ states(shelly_uptime_entity) | float > 30 }}"
+    value_template: "{{ (now() - states(shelly_uptime_entity) | as_datetime).total_seconds() > 30 }}"
   - choose:
       # Single Push
       - conditions:
