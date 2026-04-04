@@ -81,6 +81,13 @@ blueprint:
         entity:
           filter:
             - domain: input_boolean
+     shelly_uptime:
+      name: Shelly Uptime Sensor
+      description: Uptime Sensor des Shelly (z.B. sensor.buro_taster_uptime_2)
+      selector:
+        entity:
+          filter:
+            - domain: sensor       
 
 variables:
   dimmable_lights_list: !input dimmable_lights
@@ -98,6 +105,8 @@ trigger:
       - unknown      
 
 action:
+  - condition: template
+    value_template: "{{ states(input.shelly_uptime) | float > 30 }}"
   - condition: template                     
     value_template: "{{ event_age < 3 }}"  
   - choose:
