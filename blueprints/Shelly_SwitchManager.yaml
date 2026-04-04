@@ -93,7 +93,6 @@ variables:
   dimmable_lights_list: !input dimmable_lights
   dim_speed_value: !input dim_speed
   event_type: "{{ trigger.to_state.attributes.event_type }}"
-  event_age: "{{ (now() - trigger.to_state.last_changed).total_seconds() }}"  
   lights_on: "{{ expand(dimmable_lights_list) | selectattr('state', 'eq', 'on') | map(attribute='entity_id') | list }}"
 
 trigger:
@@ -106,7 +105,6 @@ trigger:
 
 action:
   - condition: template                     
-    value_template: "{{ event_age < 3 }}"  
     value_template: "{{ states(input.shelly_uptime) | float > 30 }}"
   - choose:
       # Single Push
