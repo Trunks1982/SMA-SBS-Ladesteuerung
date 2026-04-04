@@ -81,7 +81,7 @@ blueprint:
         entity:
           filter:
             - domain: input_boolean
-     shelly_uptime:
+    shelly_uptime:
       name: Shelly Uptime Sensor
       description: Uptime Sensor des Shelly (z.B. sensor.buro_taster_uptime_2)
       selector:
