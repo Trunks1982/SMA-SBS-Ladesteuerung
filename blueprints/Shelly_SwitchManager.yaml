@@ -83,12 +83,12 @@ blueprint:
             - domain: input_boolean
             
      shelly_uptime:
-       name: Shelly Uptime Sensor
-       description: Uptime Sensor des Shelly (z.B. sensor.buro_taster_uptime_2)
-       selector:
-         entity:
-           filter:
-             - domain: sensor       
+      name: Shelly Uptime Sensor
+      description: Uptime Sensor des Shelly (z.B. sensor.buro_taster_uptime_2)
+      selector:
+        entity:
+          filter:
+            - domain: sensor
 
 variables:
   dimmable_lights_list: !input dimmable_lights
