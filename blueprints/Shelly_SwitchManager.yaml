@@ -19,6 +19,14 @@ blueprint:
           filter:
             - domain: event
     
+    shelly_uptime:
+      name: Shelly Uptime Sensor
+      description: Uptime Sensor des Shelly (z.B. sensor.buro_taster_uptime_2)
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+    
     single_push_action:
       name: Single Push - Aktion
       description: Was soll bei Single Push passieren?
@@ -81,18 +89,11 @@ blueprint:
         entity:
           filter:
             - domain: input_boolean
-            
-     shelly_uptime:
-      name: Shelly Uptime Sensor
-      description: Uptime Sensor des Shelly (z.B. sensor.buro_taster_uptime_2)
-      selector:
-        entity:
-          filter:
-            - domain: sensor
 
 variables:
   dimmable_lights_list: !input dimmable_lights
   dim_speed_value: !input dim_speed
+  shelly_uptime_entity: !input shelly_uptime
   event_type: "{{ trigger.to_state.attributes.event_type }}"
   lights_on: "{{ expand(dimmable_lights_list) | selectattr('state', 'eq', 'on') | map(attribute='entity_id') | list }}"
 
@@ -100,13 +101,13 @@ trigger:
   - platform: state
     entity_id: !input shelly_button
     attribute: event_type
-    not_from:        
-      - unavailable  
-      - unknown      
+    not_from:
+      - unavailable
+      - unknown
 
 action:
-  - condition: template                     
-    value_template: "{{ states(input.shelly_uptime) | float > 30 }}"
+  - condition: template
+    value_template: "{{ states(shelly_uptime_entity) | float > 30 }}"
   - choose:
       # Single Push
       - conditions:
