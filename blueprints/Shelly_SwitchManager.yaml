@@ -95,6 +95,7 @@ blueprint:
 variables:
   dimmable_lights_list: !input dimmable_lights
   dim_speed_value: !input dim_speed
+  dim_direction_helper: !input dim_direction_helper
 
 trigger:
   - platform: event
@@ -161,7 +162,7 @@ action:
             value_template: "{{ expand(dimmable_lights_list) | selectattr('state', 'eq', 'on') | list | count > 0 }}"
         sequence:
           - variables:
-              dim_up: "{{ states(!input dim_direction_helper) == 'off' }}"
+              dim_up: "{{ states(dim_direction_helper) == 'off' }}"
           - if:
               - condition: template
                 value_template: "{{ dim_up }}"
@@ -199,7 +200,7 @@ action:
                         milliseconds: !input dim_delay
           - service: input_boolean.toggle
             target:
-              entity_id: !input dim_direction_helper
+              entity_id: "{{ dim_direction_helper }}"
 
       # btn_up - Dimmen stoppen
       - conditions:
