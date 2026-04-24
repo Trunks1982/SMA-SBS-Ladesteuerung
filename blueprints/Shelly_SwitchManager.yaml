@@ -84,18 +84,17 @@ blueprint:
     dim_direction_helper:
       name: Dimm-Richtung Helper
       description: |
-        Input Boolean Helper für die Dimm-Richtung.
-        WICHTIG: Muss vorher erstellt werden!
-        Einstellungen → Helfer → Schalter erstellen
+        Switch Helper für die Dimm-Richtung.
+        WICHTIG: Muss einmalig manuell erstellt werden!
+        Einstellungen → Helfer → + Erstellen → Schalter
       selector:
         entity:
           filter:
-            - domain: input_boolean
+            - domain: switch
 
 variables:
   dimmable_lights_list: !input dimmable_lights
   dim_speed_value: !input dim_speed
-  dim_direction_helper: !input dim_direction_helper
 
 trigger:
   - platform: event
@@ -162,7 +161,7 @@ action:
             value_template: "{{ expand(dimmable_lights_list) | selectattr('state', 'eq', 'on') | list | count > 0 }}"
         sequence:
           - variables:
-              dim_up: "{{ states(dim_direction_helper) == 'off' }}"
+              dim_up: "{{ states(!input dim_direction_helper) == 'off' }}"
           - if:
               - condition: template
                 value_template: "{{ dim_up }}"
@@ -198,11 +197,11 @@ action:
                         brightness_step: "{{ -dim_speed_value }}"
                     - delay:
                         milliseconds: !input dim_delay
-          - service: input_boolean.toggle
+          - service: switch.toggle
             target:
               entity_id: !input dim_direction_helper
 
-      # btn_up - stoppt das Dimmen (durch mode: restart)
+      # btn_up - Dimmen stoppen
       - conditions:
           - condition: trigger
             id: btn_up
