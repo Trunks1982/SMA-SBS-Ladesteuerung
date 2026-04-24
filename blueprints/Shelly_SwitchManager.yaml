@@ -11,21 +11,23 @@ blueprint:
   domain: automation
   
   input:
-    shelly_button:
-      name: Shelly Button
-      description: Event Entity des Shelly Buttons
+    shelly_device_id:
+      name: Shelly Device ID
+      description: Device ID des Shelly (zu finden unter Einstellungen → Geräte)
       selector:
-        entity:
+        device:
           filter:
-            - domain: event
+            - integration: shelly
     
-    shelly_uptime:
-      name: Shelly Uptime Sensor
-      description: Uptime Sensor des Shelly (z.B. sensor.buro_taster_uptime_2)
+    shelly_channel:
+      name: Shelly Kanal
+      description: Kanal des Buttons (1-4)
+      default: 1
       selector:
-        entity:
-          filter:
-            - domain: sensor
+        number:
+          min: 1
+          max: 4
+          step: 1
     
     single_push_action:
       name: Single Push - Aktion
@@ -93,44 +95,39 @@ blueprint:
 variables:
   dimmable_lights_list: !input dimmable_lights
   dim_speed_value: !input dim_speed
-  shelly_uptime_entity: !input shelly_uptime
-  event_type: "{{ trigger.to_state.attributes.event_type }}"
   lights_on: "{{ expand(dimmable_lights_list) | selectattr('state', 'eq', 'on') | map(attribute='entity_id') | list }}"
 
 trigger:
-  - platform: state
-    entity_id: !input shelly_button
-    attribute: event_type
-    not_from:
-      - unavailable
-      - unknown
+  - platform: event
+    event_type: shelly.click
+    event_data:
+      device_id: !input shelly_device_id
+      channel: !input shelly_channel
 
 action:
-  - condition: template
-    value_template: "{{ (now() - states(shelly_uptime_entity) | as_datetime).total_seconds() > 30 }}"
   - choose:
       # Single Push
       - conditions:
           - condition: template
-            value_template: "{{ event_type == 'single_push' }}"
+            value_template: "{{ trigger.event.data.click_type == 'single_push' }}"
         sequence: !input single_push_action
       
       # Double Push
       - conditions:
           - condition: template
-            value_template: "{{ event_type == 'double_push' }}"
+            value_template: "{{ trigger.event.data.click_type == 'double_push' }}"
         sequence: !input double_push_action
       
       # Triple Push
       - conditions:
           - condition: template
-            value_template: "{{ event_type == 'triple_push' }}"
+            value_template: "{{ trigger.event.data.click_type == 'triple_push' }}"
         sequence: !input triple_push_action
       
       # Long Push - Dimmen
       - conditions:
           - condition: template
-            value_template: "{{ event_type == 'long_push' }}"
+            value_template: "{{ trigger.event.data.click_type == 'long_push' }}"
           - condition: template
             value_template: "{{ lights_on | count > 0 }}"
         sequence:
