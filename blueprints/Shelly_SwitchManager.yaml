@@ -84,13 +84,13 @@ blueprint:
     dim_direction_helper:
       name: Dimm-Richtung Helper
       description: |
-        Switch Helper für die Dimm-Richtung.
+        Input Boolean Helper für die Dimm-Richtung.
         WICHTIG: Muss einmalig manuell erstellt werden!
         Einstellungen → Helfer → + Erstellen → Schalter
       selector:
         entity:
           filter:
-            - domain: switch
+            - domain: input_boolean
 
 variables:
   dimmable_lights_list: !input dimmable_lights
@@ -197,7 +197,7 @@ action:
                         brightness_step: "{{ -dim_speed_value }}"
                     - delay:
                         milliseconds: !input dim_delay
-          - service: switch.toggle
+          - service: input_boolean.toggle
             target:
               entity_id: !input dim_direction_helper
 
