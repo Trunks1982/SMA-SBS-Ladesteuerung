@@ -103,36 +103,66 @@ trigger:
     event_data:
       device_id: !input shelly_device_id
       channel: !input shelly_channel
+      click_type: single_push
+    id: single_push
+  - platform: event
+    event_type: shelly.click
+    event_data:
+      device_id: !input shelly_device_id
+      channel: !input shelly_channel
+      click_type: double_push
+    id: double_push
+  - platform: event
+    event_type: shelly.click
+    event_data:
+      device_id: !input shelly_device_id
+      channel: !input shelly_channel
+      click_type: triple_push
+    id: triple_push
+  - platform: event
+    event_type: shelly.click
+    event_data:
+      device_id: !input shelly_device_id
+      channel: !input shelly_channel
+      click_type: long_push
+    id: long_push
+  - platform: event
+    event_type: shelly.click
+    event_data:
+      device_id: !input shelly_device_id
+      channel: !input shelly_channel
+      click_type: btn_up
+    id: btn_up
 
 action:
   - choose:
       # Single Push
       - conditions:
-          - condition: template
-            value_template: "{{ trigger.event.data.click_type == 'single_push' }}"
+          - condition: trigger
+            id: single_push
         sequence: !input single_push_action
-      
+
       # Double Push
       - conditions:
-          - condition: template
-            value_template: "{{ trigger.event.data.click_type == 'double_push' }}"
+          - condition: trigger
+            id: double_push
         sequence: !input double_push_action
-      
+
       # Triple Push
       - conditions:
-          - condition: template
-            value_template: "{{ trigger.event.data.click_type == 'triple_push' }}"
+          - condition: trigger
+            id: triple_push
         sequence: !input triple_push_action
-      
+
       # Long Push - Dimmen
       - conditions:
-          - condition: template
-            value_template: "{{ trigger.event.data.click_type == 'long_push' }}"
+          - condition: trigger
+            id: long_push
           - condition: template
             value_template: "{{ expand(dimmable_lights_list) | selectattr('state', 'eq', 'on') | list | count > 0 }}"
         sequence:
           - variables:
-              dim_up: "{{ is_state(dim_direction_helper, 'off') }}"
+              dim_up: "{{ states(dim_direction_helper) == 'off' }}"
           - if:
               - condition: template
                 value_template: "{{ dim_up }}"
@@ -171,5 +201,11 @@ action:
           - service: input_boolean.toggle
             target:
               entity_id: !input dim_direction_helper
+
+      # btn_up - stoppt das Dimmen (durch mode: restart)
+      - conditions:
+          - condition: trigger
+            id: btn_up
+        sequence: []
 
 mode: restart
