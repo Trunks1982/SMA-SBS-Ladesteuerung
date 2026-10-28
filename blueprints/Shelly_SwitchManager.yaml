@@ -1,216 +1,191 @@
 blueprint:
-  name: Shelly Button Steuerung
-  description: |
-    Steuert Lichter mit einem Shelly Button.
-    - Single Push: Frei definierbarer Service
-    - Double Push: Frei definierbarer Service
-    - Triple Push: Frei definierbarer Service
-    - Long Push: Dimmen (hoch/runter wechselt automatisch)
-    
-    Perfekt für alle Räume mit Shelly Buttons!
+  name: Shelly Gen2 Taster – schnelle Klickerkennung
+  description: >
+    Erkennt Single/Double/Triple-Klick selbst über btn_up-Events mit
+    konfigurierbarem Klick-Fenster, statt auf die langsame Firmware-Erkennung
+    (double_push/triple_push) zu warten. Long-Push inkl. Halten-zum-Dimmen.
   domain: automation
-
   input:
-    shelly_device_id:
-      name: Shelly Device ID
-      description: Device ID des Shelly (zu finden unter Einstellungen → Geräte)
+    shelly_device:
+      name: Shelly Gerät
       selector:
         device:
-          filter:
-            - integration: shelly
-
-    shelly_channel:
-      name: Shelly Kanal
-      description: Kanal des Buttons (1-4)
-      default: 1
+          integration: shelly
+    channel:
+      name: Eingang / Kanal
+      description: Beim Plus 1 immer 0, beim Plus i4 0–3.
+      default: 0
       selector:
         number:
-          min: 1
-          max: 4
-          step: 1
-
-    single_push_action:
-      name: Single Push - Aktion
-      description: Was soll bei Single Push passieren?
+          min: 0
+          max: 3
+          mode: box
+    click_window:
+      name: Klick-Fenster (ms)
+      description: >
+        Zeit, in der ein weiterer Klick als Doppel-/Dreifachklick zählt.
+        Kleiner = schneller, aber man muss zügiger klicken. 300 ist ein guter Start.
+      default: 300
+      selector:
+        number:
+          min: 100
+          max: 1000
+          step: 10
+          unit_of_measurement: ms
+    single_action:
+      name: Einfach-Klick
       default: []
       selector:
         action: {}
-
-    double_push_action:
-      name: Double Push - Aktion
-      description: Was soll bei Double Push passieren?
+    double_action:
+      name: Doppel-Klick
       default: []
       selector:
         action: {}
-
-    triple_push_action:
-      name: Triple Push - Aktion
-      description: Was soll bei Triple Push passieren?
+    triple_action:
+      name: Dreifach-Klick
       default: []
       selector:
         action: {}
-
-    dimmable_lights:
-      name: Dimmbare Lampen
-      description: Welche Lampen sollen beim Long Push gedimmt werden?
+    long_action:
+      name: Long-Push – Beginn
+      description: Wird ausgeführt, sobald die Firmware long_push meldet.
       default: []
+      selector:
+        action: {}
+    long_release_action:
+      name: Long-Push – Loslassen
+      default: []
+      selector:
+        action: {}
+    dim_light:
+      name: Licht zum Dimmen beim Halten (optional)
+      description: >
+        Ist hier ein Licht gewählt, wird beim Halten gedimmt. Richtung automatisch:
+        Licht aus oder unter 50 % → heller, sonst dunkler.
+      default: ""
       selector:
         entity:
-          filter:
-            - domain: light
-          multiple: true
-
-    dim_speed:
-      name: Dimm-Geschwindigkeit
-      description: Geschwindigkeit beim Dimmen (höher = schneller)
-      default: 20
+          domain: light
+    dim_step:
+      name: Dimm-Schritt (%)
+      default: 10
       selector:
         number:
-          min: 5
-          max: 50
-          step: 5
-
-    dim_delay:
-      name: Dimm-Verzögerung
-      description: Verzögerung zwischen Dimm-Schritten in Millisekunden
-      default: 150
+          min: 2
+          max: 25
+          unit_of_measurement: "%"
+    dim_interval:
+      name: Dimm-Intervall (ms)
+      default: 250
       selector:
         number:
-          min: 50
-          max: 500
+          min: 100
+          max: 1000
           step: 50
-          unit_of_measurement: "ms"
+          unit_of_measurement: ms
 
-    dim_direction_helper:
-      name: Dimm-Richtung Helper
-      description: |
-        Input Boolean Helper für die Dimm-Richtung.
-        WICHTIG: Muss einmalig manuell erstellt werden!
-        Einstellungen → Helfer → + Erstellen → Schalter
-      selector:
-        entity:
-          filter:
-            - domain: input_boolean
-
-variables:
-  dimmable_lights_list: !input dimmable_lights
-  dim_speed_value: !input dim_speed
-  dim_direction_helper: !input dim_direction_helper
+# Wichtig: single + silent, damit der 2./3. Klick vom laufenden
+# wait_for_trigger gefangen wird und nicht eine neue Instanz startet.
+mode: single
+max_exceeded: silent
 
 trigger:
   - platform: event
     event_type: shelly.click
+    id: up
     event_data:
-      device_id: !input shelly_device_id
-      channel: !input shelly_channel
-      click_type: single_push
-    id: single_push
-  - platform: event
-    event_type: shelly.click
-    event_data:
-      device_id: !input shelly_device_id
-      channel: !input shelly_channel
-      click_type: double_push
-    id: double_push
-  - platform: event
-    event_type: shelly.click
-    event_data:
-      device_id: !input shelly_device_id
-      channel: !input shelly_channel
-      click_type: triple_push
-    id: triple_push
-  - platform: event
-    event_type: shelly.click
-    event_data:
-      device_id: !input shelly_device_id
-      channel: !input shelly_channel
-      click_type: long_push
-    id: long_push
-  - platform: event
-    event_type: shelly.click
-    event_data:
-      device_id: !input shelly_device_id
-      channel: !input shelly_channel
+      device_id: !input shelly_device
+      channel: !input channel
       click_type: btn_up
-    id: btn_up
+  - platform: event
+    event_type: shelly.click
+    id: long
+    event_data:
+      device_id: !input shelly_device
+      channel: !input channel
+      click_type: long_push
+
+variables:
+  dim_light: !input dim_light
+  dim_step: !input dim_step
 
 action:
   - choose:
-      # Single Push
-      - conditions:
-          - condition: trigger
-            id: single_push
+      # ---------------- LONG PUSH ----------------
+      - conditions: "{{ trigger.id == 'long' }}"
         sequence:
-          # Kurz warten, ob noch ein Double-/Triple-Push kommt.
-          # Kommt eins, restartet die Automation und dieser Pfad wird verworfen.
-          - delay:
-              milliseconds: 400
-          - !input single_push_action
-
-      # Double Push
-      - conditions:
-          - condition: trigger
-            id: double_push
-        sequence: !input double_push_action
-
-      # Triple Push
-      - conditions:
-          - condition: trigger
-            id: triple_push
-        sequence: !input triple_push_action
-
-      # Long Push - Dimmen
-      - conditions:
-          - condition: trigger
-            id: long_push
-          - condition: template
-            value_template: "{{ expand(dimmable_lights_list) | selectattr('state', 'eq', 'on') | list | count > 0 }}"
-        sequence:
-          - variables:
-              dim_up: "{{ states(dim_direction_helper) == 'off' }}"
+          - choose: []
+            default: !input long_action
           - if:
               - condition: template
-                value_template: "{{ dim_up }}"
+                value_template: "{{ dim_light != '' }}"
             then:
+              - variables:
+                  dim_direction: >
+                    {% set b = state_attr(dim_light, 'brightness') | int(0) %}
+                    {{ -1 if (is_state(dim_light, 'on') and b > 128) else 1 }}
               - repeat:
-                  while:
-                    - condition: template
-                      value_template: >
-                        {{ expand(dimmable_lights_list) | selectattr('state', 'eq', 'on')
-                           | map(attribute='attributes.brightness') | map('int', default=0)
-                           | select('lt', 255) | list | count > 0 }}
+                  until: "{{ wait.trigger is not none or repeat.index >= 60 }}"
                   sequence:
                     - service: light.turn_on
                       target:
-                        entity_id: "{{ expand(dimmable_lights_list) | selectattr('state', 'eq', 'on') | map(attribute='entity_id') | list }}"
+                        entity_id: "{{ dim_light }}"
                       data:
-                        brightness_step: "{{ dim_speed_value | int }}"
-                    - delay:
-                        milliseconds: !input dim_delay
+                        brightness_step_pct: "{{ dim_step * dim_direction }}"
+                    - wait_for_trigger:
+                        - platform: event
+                          event_type: shelly.click
+                          event_data:
+                            device_id: !input shelly_device
+                            channel: !input channel
+                            click_type: btn_up
+                      timeout:
+                        milliseconds: !input dim_interval
             else:
-              - repeat:
-                  while:
-                    - condition: template
-                      value_template: >
-                        {{ expand(dimmable_lights_list) | selectattr('state', 'eq', 'on')
-                           | map(attribute='attributes.brightness') | map('int', default=0)
-                           | select('gt', 5) | list | count > 0 }}
-                  sequence:
-                    - service: light.turn_on
-                      target:
-                        entity_id: "{{ expand(dimmable_lights_list) | selectattr('state', 'eq', 'on') | map(attribute='entity_id') | list }}"
-                      data:
-                        brightness_step: "{{ (dim_speed_value | int) * -1 }}"
-                    - delay:
-                        milliseconds: !input dim_delay
-          - service: input_boolean.toggle
-            target:
-              entity_id: "{{ dim_direction_helper }}"
+              # btn_up nach dem Long-Push "verbrauchen", damit er nicht als Single zählt
+              - wait_for_trigger:
+                  - platform: event
+                    event_type: shelly.click
+                    event_data:
+                      device_id: !input shelly_device
+                      channel: !input channel
+                      click_type: btn_up
+                timeout:
+                  seconds: 15
+          - choose: []
+            default: !input long_release_action
 
-      # btn_up - Dimmen stoppen
-      - conditions:
-          - condition: trigger
-            id: btn_up
-        sequence: []
-
-mode: restart
+      # ---------------- KLICK-ERKENNUNG ----------------
+      - conditions: "{{ trigger.id == 'up' }}"
+        sequence:
+          # Warten auf 2. Klick
+          - wait_for_trigger:
+              - platform: event
+                event_type: shelly.click
+                event_data:
+                  device_id: !input shelly_device
+                  channel: !input channel
+                  click_type: btn_up
+            timeout:
+              milliseconds: !input click_window
+          - if:
+              - condition: template
+                value_template: "{{ wait.trigger is none }}"
+            then: !input single_action
+            else:
+              # Warten auf 3. Klick
+              - wait_for_trigger:
+                  - platform: event
+                    event_type: shelly.click
+                    event_data:
+                      device_id: !input shelly_device
+                      channel: !input channel
+                      click_type: btn_up
+                timeout:
+                  milliseconds: !input click_window
+              - if:
+                  - condition: template
+                    value_template: "{{ wait.trigger is none }}"
+                then: !input double_action
+                else: !input triple_action
