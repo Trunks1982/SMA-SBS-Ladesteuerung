@@ -2,29 +2,28 @@ blueprint:
   name: Shelly Gen2 Taster – schnelle Klickerkennung
   description: >
     Erkennt Single/Double/Triple-Klick selbst über btn_up-Events mit
-    konfigurierbarem Klick-Fenster, statt auf die langsame Firmware-Erkennung
-    (double_push/triple_push) zu warten. Long-Push inkl. Halten-zum-Dimmen.
+    konfigurierbarem Klick-Fenster. Long-Push dimmt alle gewählten Lampen,
+    die gerade an sind.
   domain: automation
   input:
     shelly_device:
       name: Shelly Gerät
       selector:
         device:
-          integration: shelly
+          filter:
+            - integration: shelly
     channel:
       name: Eingang / Kanal
-      description: Beim Plus 1 immer 0, beim Plus i4 0–3.
+      description: Wert aus dem Event (`channel`) übernehmen. Bei deinem Plus 1 war es 1.
       default: 0
       selector:
         number:
           min: 0
-          max: 3
+          max: 4
           mode: box
     click_window:
       name: Klick-Fenster (ms)
-      description: >
-        Zeit, in der ein weiterer Klick als Doppel-/Dreifachklick zählt.
-        Kleiner = schneller, aber man muss zügiger klicken. 300 ist ein guter Start.
+      description: Zeit, in der ein weiterer Klick als Doppel-/Dreifachklick zählt.
       default: 300
       selector:
         number:
@@ -47,26 +46,15 @@ blueprint:
       default: []
       selector:
         action: {}
-    long_action:
-      name: Long-Push – Beginn
-      description: Wird ausgeführt, sobald die Firmware long_push meldet.
+    dim_lights:
+      name: Dimmbare Lampen
+      description: Beim Halten werden nur die Lampen gedimmt, die gerade an sind.
       default: []
-      selector:
-        action: {}
-    long_release_action:
-      name: Long-Push – Loslassen
-      default: []
-      selector:
-        action: {}
-    dim_light:
-      name: Licht zum Dimmen beim Halten (optional)
-      description: >
-        Ist hier ein Licht gewählt, wird beim Halten gedimmt. Richtung automatisch:
-        Licht aus oder unter 50 % → heller, sonst dunkler.
-      default: ""
       selector:
         entity:
-          domain: light
+          multiple: true
+          filter:
+            - domain: light
     dim_step:
       name: Dimm-Schritt (%)
       default: 10
@@ -77,91 +65,110 @@ blueprint:
           unit_of_measurement: "%"
     dim_interval:
       name: Dimm-Intervall (ms)
-      default: 250
+      default: 200
       selector:
         number:
-          min: 100
-          max: 1000
-          step: 50
+          min: 50
+          max: 500
+          step: 10
           unit_of_measurement: ms
+    dim_direction_helper:
+      name: Dimm-Richtung Helper (optional)
+      description: >
+        Input Boolean. Wenn gesetzt, wechselt die Richtung bei jedem Long-Push ab.
+        Leer lassen = Richtung nach durchschnittlicher Helligkeit.
+      default: ""
+      selector:
+        entity:
+          filter:
+            - domain: input_boolean
 
-# Wichtig: single + silent, damit der 2./3. Klick vom laufenden
-# wait_for_trigger gefangen wird und nicht eine neue Instanz startet.
 mode: single
 max_exceeded: silent
 
-trigger:
-  - platform: event
+triggers:
+  - trigger: event
     event_type: shelly.click
-    id: up
     event_data:
       device_id: !input shelly_device
       channel: !input channel
       click_type: btn_up
-  - platform: event
+    id: up
+  - trigger: event
     event_type: shelly.click
-    id: long
     event_data:
       device_id: !input shelly_device
       channel: !input channel
       click_type: long_push
+    id: long
 
 variables:
-  dim_light: !input dim_light
+  dim_lights: !input dim_lights
   dim_step: !input dim_step
+  dim_helper: !input dim_direction_helper
 
-action:
+actions:
   - choose:
-      # ---------------- LONG PUSH ----------------
-      - conditions: "{{ trigger.id == 'long' }}"
+      # ---------- LONG PUSH: dimmen ----------
+      - conditions:
+          - condition: trigger
+            id: long
         sequence:
-          - choose: []
-            default: !input long_action
+          - variables:
+              on_lights: >
+                {{ expand(dim_lights) | selectattr('state', 'eq', 'on')
+                   | map(attribute='entity_id') | list }}
+              direction: >
+                {% if dim_helper not in ['', none] %}
+                  {{ 1 if is_state(dim_helper, 'off') else -1 }}
+                {% else %}
+                  {% set br = expand(on_lights) | map(attribute='attributes.brightness')
+                              | map('int', 0) | list %}
+                  {{ -1 if br and (br | average) > 128 else 1 }}
+                {% endif %}
+          - repeat:
+              sequence:
+                - if:
+                    - condition: template
+                      value_template: >
+                        {{ expand(on_lights) | selectattr('state', 'eq', 'on') | list | count > 0 }}
+                  then:
+                    - action: light.turn_on
+                      target:
+                        entity_id: >
+                          {{ expand(on_lights) | selectattr('state', 'eq', 'on')
+                             | map(attribute='entity_id') | list }}
+                      data:
+                        brightness_step_pct: "{{ direction | int * dim_step | int }}"
+                # Intervall abwarten – Loslassen beendet die Schleife sofort
+                - wait_for_trigger:
+                    - trigger: event
+                      event_type: shelly.click
+                      event_data:
+                        device_id: !input shelly_device
+                        channel: !input channel
+                        click_type: btn_up
+                  timeout:
+                    milliseconds: !input dim_interval
+                  continue_on_timeout: true
+              until:
+                - condition: template
+                  value_template: "{{ wait.trigger is not none or repeat.index >= 300 }}"
           - if:
               - condition: template
-                value_template: "{{ dim_light != '' }}"
+                value_template: "{{ dim_helper not in ['', none] and on_lights | count > 0 }}"
             then:
-              - variables:
-                  dim_direction: >
-                    {% set b = state_attr(dim_light, 'brightness') | int(0) %}
-                    {{ -1 if (is_state(dim_light, 'on') and b > 128) else 1 }}
-              - repeat:
-                  until: "{{ wait.trigger is not none or repeat.index >= 60 }}"
-                  sequence:
-                    - service: light.turn_on
-                      target:
-                        entity_id: "{{ dim_light }}"
-                      data:
-                        brightness_step_pct: "{{ dim_step * dim_direction }}"
-                    - wait_for_trigger:
-                        - platform: event
-                          event_type: shelly.click
-                          event_data:
-                            device_id: !input shelly_device
-                            channel: !input channel
-                            click_type: btn_up
-                      timeout:
-                        milliseconds: !input dim_interval
-            else:
-              # btn_up nach dem Long-Push "verbrauchen", damit er nicht als Single zählt
-              - wait_for_trigger:
-                  - platform: event
-                    event_type: shelly.click
-                    event_data:
-                      device_id: !input shelly_device
-                      channel: !input channel
-                      click_type: btn_up
-                timeout:
-                  seconds: 15
-          - choose: []
-            default: !input long_release_action
+              - action: input_boolean.toggle
+                target:
+                  entity_id: "{{ dim_helper }}"
 
-      # ---------------- KLICK-ERKENNUNG ----------------
-      - conditions: "{{ trigger.id == 'up' }}"
+      # ---------- KLICKS zählen ----------
+      - conditions:
+          - condition: trigger
+            id: up
         sequence:
-          # Warten auf 2. Klick
           - wait_for_trigger:
-              - platform: event
+              - trigger: event
                 event_type: shelly.click
                 event_data:
                   device_id: !input shelly_device
@@ -169,14 +176,14 @@ action:
                   click_type: btn_up
             timeout:
               milliseconds: !input click_window
+            continue_on_timeout: true
           - if:
               - condition: template
                 value_template: "{{ wait.trigger is none }}"
             then: !input single_action
             else:
-              # Warten auf 3. Klick
               - wait_for_trigger:
-                  - platform: event
+                  - trigger: event
                     event_type: shelly.click
                     event_data:
                       device_id: !input shelly_device
@@ -184,6 +191,7 @@ action:
                       click_type: btn_up
                 timeout:
                   milliseconds: !input click_window
+                continue_on_timeout: true
               - if:
                   - condition: template
                     value_template: "{{ wait.trigger is none }}"
