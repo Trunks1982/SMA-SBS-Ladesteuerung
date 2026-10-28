@@ -9,7 +9,7 @@ blueprint:
     
     Perfekt für alle Räume mit Shelly Buttons!
   domain: automation
-  
+
   input:
     shelly_device_id:
       name: Shelly Device ID
@@ -18,7 +18,7 @@ blueprint:
         device:
           filter:
             - integration: shelly
-    
+
     shelly_channel:
       name: Shelly Kanal
       description: Kanal des Buttons (1-4)
@@ -28,28 +28,28 @@ blueprint:
           min: 1
           max: 4
           step: 1
-    
+
     single_push_action:
       name: Single Push - Aktion
       description: Was soll bei Single Push passieren?
       default: []
       selector:
         action: {}
-    
+
     double_push_action:
       name: Double Push - Aktion
       description: Was soll bei Double Push passieren?
       default: []
       selector:
         action: {}
-    
+
     triple_push_action:
       name: Triple Push - Aktion
       description: Was soll bei Triple Push passieren?
       default: []
       selector:
         action: {}
-    
+
     dimmable_lights:
       name: Dimmbare Lampen
       description: Welche Lampen sollen beim Long Push gedimmt werden?
@@ -59,7 +59,7 @@ blueprint:
           filter:
             - domain: light
           multiple: true
-    
+
     dim_speed:
       name: Dimm-Geschwindigkeit
       description: Geschwindigkeit beim Dimmen (höher = schneller)
@@ -69,7 +69,7 @@ blueprint:
           min: 5
           max: 50
           step: 5
-    
+
     dim_delay:
       name: Dimm-Verzögerung
       description: Verzögerung zwischen Dimm-Schritten in Millisekunden
@@ -80,7 +80,7 @@ blueprint:
           max: 500
           step: 50
           unit_of_measurement: "ms"
-    
+
     dim_direction_helper:
       name: Dimm-Richtung Helper
       description: |
@@ -140,7 +140,12 @@ action:
       - conditions:
           - condition: trigger
             id: single_push
-        sequence: !input single_push_action
+        sequence:
+          # Kurz warten, ob noch ein Double-/Triple-Push kommt.
+          # Kommt eins, restartet die Automation und dieser Pfad wird verworfen.
+          - delay:
+              milliseconds: 400
+          - !input single_push_action
 
       # Double Push
       - conditions:
@@ -179,7 +184,7 @@ action:
                       target:
                         entity_id: "{{ expand(dimmable_lights_list) | selectattr('state', 'eq', 'on') | map(attribute='entity_id') | list }}"
                       data:
-                        brightness_step: "{{ dim_speed_value }}"
+                        brightness_step: "{{ dim_speed_value | int }}"
                     - delay:
                         milliseconds: !input dim_delay
             else:
@@ -195,7 +200,7 @@ action:
                       target:
                         entity_id: "{{ expand(dimmable_lights_list) | selectattr('state', 'eq', 'on') | map(attribute='entity_id') | list }}"
                       data:
-                        brightness_step: "{{ -dim_speed_value }}"
+                        brightness_step: "{{ (dim_speed_value | int) * -1 }}"
                     - delay:
                         milliseconds: !input dim_delay
           - service: input_boolean.toggle
